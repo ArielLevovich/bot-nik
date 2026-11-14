@@ -26,8 +26,9 @@ from sqlalchemy.orm import Session
 
 from botnik.config import PROJECT_ROOT, parse_user_ids
 from botnik.db import make_engine, make_session_factory
+from botnik.care import fill_care_defaults
 from botnik.missing import extras_from_yaml
-from botnik.models import Container, Plant, Product, Slot
+from botnik.models import AreaSun, CareEvent, Container, Plant, Product, Slot, Task
 
 GARDEN_YAML = PROJECT_ROOT / "data" / "garden.yaml"
 
@@ -149,6 +150,7 @@ def seed(session: Session, data: dict[str, Any], user_id: int) -> dict[str, int]
         )
 
     session.commit()
+    fill_care_defaults(session, user_id)
     return {
         "slots": len(slots),
         "containers": len(data.get("containers") or []),
@@ -164,6 +166,9 @@ def has_garden(session: Session, user_id: int) -> bool:
 def reset_garden(session: Session, user_id: int) -> None:
     """Delete all of this user's garden rows (other users are untouched)."""
     container_ids = select(Container.id).where(Container.user_id == user_id)
+    session.execute(delete(Task).where(Task.user_id == user_id))
+    session.execute(delete(CareEvent).where(CareEvent.user_id == user_id))
+    session.execute(delete(AreaSun).where(AreaSun.user_id == user_id))
     session.execute(delete(Plant).where(Plant.container_id.in_(container_ids)))
     session.execute(delete(Container).where(Container.user_id == user_id))
     session.execute(delete(Slot).where(Slot.user_id == user_id))

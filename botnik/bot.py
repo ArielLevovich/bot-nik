@@ -15,15 +15,21 @@ from telegram.ext import Application, CallbackQueryHandler, CommandHandler
 
 from botnik.config import PROJECT_ROOT, Settings, load_settings
 from botnik.db import make_engine, make_session_factory
-from botnik.handlers import basic, edit, garden, sun
+from botnik.care import fill_care_defaults
+from botnik.handlers import basic, care, daily, edit, garden, sun
 from botnik.handlers.auth import GATE_GROUP, PRE_GATE_GROUP, make_gate
 
 log = logging.getLogger(__name__)
 
 COMMANDS = [
+    BotCommand("today", "מה לעשות היום"),
+    BotCommand("water", "רישום השקיה"),
+    BotCommand("feed", "רישום דישון"),
     BotCommand("garden", "כל הגינה"),
     BotCommand("missing", "עציצים שחסרים להם פרטים"),
     BotCommand("sun", "שעות שמש לפי אזור"),
+    BotCommand("care", "כמה מים ודישון לכל צמח"),
+    BotCommand("settings", "שעות התדריך והסיכום"),
     BotCommand("start", "מה הבוט יודע לעשות"),
     BotCommand("myid", "מספר המשתמש שלי"),
     BotCommand("cancel", "הפסקת שאלות"),
@@ -32,11 +38,16 @@ COMMANDS = [
 
 async def _post_init(app: Application) -> None:
     await app.bot.set_my_commands(COMMANDS)  # the "Menu" button in Telegram
+    with app.bot_data["session_factory"]() as s:
+        fill_care_defaults(s)  # new plants / new columns get catalog defaults; set values are kept
+    for user_id in app.bot_data["allowed_user_ids"]:
+        daily.schedule_user(app, user_id)
 
 
 def build_application(settings: Settings, session_factory: sessionmaker[Session] | None = None) -> Application:
     app = Application.builder().token(settings.telegram_bot_token).post_init(_post_init).build()
     app.bot_data["session_factory"] = session_factory or make_session_factory(make_engine())
+    app.bot_data["allowed_user_ids"] = sorted(settings.allowed_user_ids)
 
     # Open to everyone, runs before the allow-list gate.
     app.add_handler(CommandHandler("myid", basic.myid), group=PRE_GATE_GROUP)
@@ -47,6 +58,17 @@ def build_application(settings: Settings, session_factory: sessionmaker[Session]
     app.add_handler(CommandHandler("garden", garden.garden))
     app.add_handler(CommandHandler("missing", garden.missing))
     app.add_handler(CallbackQueryHandler(garden.on_button, pattern=r"^g:"))
+    # Care log and reminders (registered before the conversations, so their buttons work mid-question too).
+    app.add_handler(CommandHandler("today", daily.today_cmd))
+    app.add_handler(CommandHandler("water", care.water_cmd))
+    app.add_handler(CommandHandler("feed", care.feed_cmd))
+    app.add_handler(CommandHandler("care", care.care_cmd))
+    app.add_handler(CommandHandler("settings", daily.settings_cmd))
+    app.add_handler(CallbackQueryHandler(daily.task_button, pattern=r"^t:"))
+    app.add_handler(CallbackQueryHandler(care.card_button, pattern=r"^c:"))
+    app.add_handler(CallbackQueryHandler(care.water_button, pattern=r"^w:"))
+    app.add_handler(CallbackQueryHandler(care.baseline_button, pattern=r"^b:"))
+    app.add_handler(CallbackQueryHandler(daily.settings_button, pattern=r"^st:"))
     app.add_handler(edit.build_conversation())
     app.add_handler(CallbackQueryHandler(edit.stale_button, pattern=r"^e:"))  # after the conversation
     app.add_handler(CommandHandler("sun", sun.overview))

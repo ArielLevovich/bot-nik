@@ -14,9 +14,10 @@ from sqlalchemy.orm import Session
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup
 
 from botnik import labels as L
-from botnik import sun
+from botnik import carelog, clock, rules, sun
+from botnik.care import FEED_GROUP_HE, WATER_NEED_HE
 from botnik.editing import askable
-from botnik.missing import missing_fields
+from botnik.missing import missing_fields, missing_label
 from botnik.models import Container, Slot
 from botnik.volume import estimate_container
 
@@ -31,7 +32,13 @@ START_TEXT = (
     "מה אפשר כבר עכשיו:\n"
     "/garden – כל הגינה לפי אזורים ומיקומים\n"
     "/missing – עציצים שחסרים להם פרטים\n"
-    "/sun – שעות שמש לפי אזור\n"
+    "/sun – שעות שמש לפי אזור\n\n"
+    "טיפול ותזכורות:\n"
+    "/today – מה לעשות היום (מגיע גם לבד כל בוקר)\n"
+    "/water – רישום השקיה: כל הגינה, אזור או עציץ\n"
+    "/feed – רישום דישון\n"
+    "/care – כמה מים ואיזה דישון כל צמח צריך\n"
+    "/settings – שעות התדריך והסיכום\n"
     "/myid – מספר המשתמש שלך בטלגרם"
 )
 
@@ -163,7 +170,33 @@ def _dimensions(c: Container) -> str | None:
     )
 
 
-def container_card(session: Session, user_id: int, number: int, back: str = "a") -> tuple[str, InlineKeyboardMarkup]:
+def care_lines(session: Session, c: Container, today) -> list[str]:
+    """Last/next watering and fertilizing for the card."""
+    last_w = carelog.last_date(session, c.id, "water")
+    last_f = carelog.last_date(session, c.id, "feed")
+    last_m = carelog.last_date(session, c.id, "move")
+    due_w, plan_w = rules.next_water(c, last_w, today)
+    lines = []
+    if plan_w is None:
+        lines.append(f"💧 <b>השקיה:</b> אחרונה {clock.ago_he(last_w, today)} · חסר פרופיל טיפול לצמחים")
+    else:
+        amount = rules.suggested_amount_l(c)
+        amount_txt = f" · ≈{amount:g} ל׳" if amount else ""
+        lines.append(
+            f"💧 <b>השקיה:</b> אחרונה {clock.ago_he(last_w, today)} · הבאה {clock.when_he(due_w, today)}{amount_txt}"
+        )
+        lines.append(f"   כל {plan_w.days} ימים: {escape(plan_w.reason)}")
+    due_f, plan_f = rules.next_feed(c, last_f, today, last_m)
+    nxt = clock.when_he(due_f, today) if due_f else escape(plan_f.reason)
+    lines.append(f"🌱 <b>דישון:</b> אחרון {clock.ago_he(last_f, today)} · הבא {nxt}")
+    if due_f and plan_f.reason.startswith("תקופת"):
+        lines.append(f"   {escape(plan_f.reason)}")
+    return lines
+
+
+def container_card(
+    session: Session, user_id: int, number: int, back: str = "a", top_rows: list | None = None
+) -> tuple[str, InlineKeyboardMarkup]:
     c = session.scalars(select(Container).where(Container.user_id == user_id, Container.number == number)).one_or_none()
     if c is None:
         return f"לא מצאתי עציץ #{number}.", InlineKeyboardMarkup([[InlineKeyboardButton("⬅️ לכל הגינה", callback_data=CB_HOME)]])
@@ -231,20 +264,30 @@ def container_card(session: Session, user_id: int, number: int, back: str = "a")
             lines.append(f"   היסטוריית מזיקים: {escape(', '.join(p.pests_history))}")
         if p.planted_on:
             lines.append(f"   נשתל ב־{p.planted_on:%d.%m.%Y}")
+        if p.water_need or p.feed_group:
+            lines.append(
+                f"   טיפול: {L.he(WATER_NEED_HE, p.water_need, '? מים')} · דישון: {L.he(FEED_GROUP_HE, p.feed_group, '?')}"
+            )
+
+    lines += [""] + care_lines(session, c, clock.today())
 
     lines += ["", f"<b>מצב:</b> {L.STATUS_EMOJI.get(c.status, '⚪')} {L.he(L.STATUS_HE, c.status)}"]
     lines.append(f"   {escape(c.condition)}" if c.condition else "   לא נרשם")
 
     missing = missing_fields(c)
     if missing:
-        lines += ["", "❓ <b>חסר:</b> " + ", ".join(escape(L.missing_he(m)) for m in missing)]
+        lines += ["", "❓ <b>חסר:</b> " + ", ".join(escape(missing_label(c, m)) for m in missing)]
 
     if back == "m":
         back_btn = InlineKeyboardButton("⬅️ לרשימת החסרים", callback_data=CB_MISSING)
     else:
         area = c.slot.area if c.slot else L.NO_SLOT_KEY
         back_btn = InlineKeyboardButton("⬅️ חזרה לאזור", callback_data=f"g:a:{area}")
-    keyboard = []
+    keyboard = list(top_rows or [])
+    keyboard.append([
+        InlineKeyboardButton("💧 השקיתי", callback_data=f"c:w:{c.number}"),
+        InlineKeyboardButton("🌱 דישנתי", callback_data=f"c:f:{c.number}"),
+    ])
     if any(askable(m) for m in missing):
         keyboard.append([InlineKeyboardButton("✏️ השלמת פרטים", callback_data=f"e:c:{c.number}")])
     keyboard.append([
@@ -269,7 +312,7 @@ def missing_view(session: Session, user_id: int) -> tuple[str, InlineKeyboardMar
     lines = ["❓ <b>עציצים שחסרים להם פרטים</b>", ""]
     for c in containers:
         lines.append(container_line(c))
-        lines.append("   חסר: " + ", ".join(escape(L.missing_he(m)) for m in missing_fields(c)))
+        lines.append("   חסר: " + ", ".join(escape(missing_label(c, m)) for m in missing_fields(c)))
     lines += ["", "בחר עציץ, ובכרטיס שלו לחץ ✏️ השלמת פרטים."]
     if sun_line:
         lines += ["", sun_line]

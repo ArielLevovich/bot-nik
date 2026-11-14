@@ -2,18 +2,48 @@
 
 from __future__ import annotations
 
-from sqlalchemy import Engine, create_engine
+import logging
+
+from sqlalchemy import Engine, create_engine, inspect, text
 from sqlalchemy.orm import Session, sessionmaker
 
 from botnik.config import PROJECT_ROOT
 from botnik.models import Base
 
+log = logging.getLogger(__name__)
+
 DEFAULT_DB_URL = f"sqlite:///{PROJECT_ROOT / 'botnik.db'}"
+
+
+def add_missing_columns(engine: Engine) -> list[str]:
+    """Tiny migration: add new nullable model columns to existing tables (data is kept).
+
+    create_all() makes new tables but never changes existing ones. Only nullable
+    columns are added automatically; anything else needs a real migration.
+    """
+    added = []
+    insp = inspect(engine)
+    with engine.begin() as conn:
+        for table in Base.metadata.sorted_tables:
+            if not insp.has_table(table.name):
+                continue
+            existing = {c["name"] for c in insp.get_columns(table.name)}
+            for column in table.columns:
+                if column.name in existing:
+                    continue
+                if not column.nullable or column.primary_key:
+                    raise RuntimeError(f"Cannot add required column {table.name}.{column.name} automatically")
+                conn.execute(text(f'ALTER TABLE "{table.name}" ADD COLUMN "{column.name}" {column.type.compile(engine.dialect)}'))
+                added.append(f"{table.name}.{column.name}")
+    for name in added:
+        log.info("Added column %s", name)
+    return added
 
 
 def make_engine(url: str = DEFAULT_DB_URL) -> Engine:
     engine = create_engine(url)
     Base.metadata.create_all(engine)
+    add_missing_columns(engine)
     return engine
 
 

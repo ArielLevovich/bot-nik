@@ -15,12 +15,14 @@ from sqlalchemy.orm import Session
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup
 
 from botnik import labels as L
-from botnik.missing import FIELD_ATTR, missing_fields
+from botnik import carelog
+from botnik.care import FEED_GROUP_HE, FEED_GROUPS, WATER_NEED_BUTTON, WATER_NEEDS
+from botnik.missing import FIELD_ATTR, missing_fields, plant_key
 from botnik.models import Container, Slot
 
 MAX_CM = 300
 
-# Modes: "c" complete missing, "s" status (+ condition), "m" move (slot + level)
+# Modes: "c" complete missing, "s" status (+ condition), "m" move (slot + level), "p" care profile of all plants
 FIXED_KEYS = {"s": ["status", "condition_update"], "m": ["slot", "level"]}
 
 CB_SKIP = "e:skip"
@@ -57,13 +59,34 @@ DIMENSION_PROMPTS = {
 NUMBER_HINT = "\nכתוב מספר, למשל 30."
 
 
+def profile_keys(c: Container) -> list[str]:
+    return [f"plant{p.position}.{attr}" for p in c.plants for attr in ("water_need", "feed_group")]
+
+
 def askable(key: str) -> bool:
+    if plant_key(key):
+        return True
     return key in DIMENSION_PROMPTS or key in {
         "slot", "level", "shape", "material", "color", "condition", "condition_update", "status", "outer_raw_meaning",
     }
 
 
+def _plant(c: Container, position: int):
+    return next(p for p in c.plants if p.position == position)
+
+
 def build_question(session: Session, c: Container, key: str) -> Question:
+    pk = plant_key(key)
+    if pk:
+        plant = _plant(c, pk[0])
+        name = plant.name_he + (f" ({plant.note})" if plant.note and len(c.plants) > 1 else "")
+        if pk[1] == "water_need":
+            current = f"\nעכשיו: {WATER_NEED_BUTTON[plant.water_need]}" if plant.water_need else ""
+            return Question(key, "choice", f"💧 כמה מים צריך <b>{name}</b>?{current}",
+                            [(v, WATER_NEED_BUTTON[v]) for v in WATER_NEEDS], per_row=1)
+        current = f"\nעכשיו: {FEED_GROUP_HE[plant.feed_group]}" if plant.feed_group else ""
+        return Question(key, "choice", f"🌱 איזה סוג צמח זה לצורך דישון – <b>{name}</b>?{current}",
+                        [(v, FEED_GROUP_HE[v]) for v in FEED_GROUPS], per_row=3)
     if key == "slot":
         slots = session.scalars(select(Slot).where(Slot.user_id == c.user_id).order_by(Slot.id))
         current = f"\nעכשיו: {c.slot.code}" if c.slot else ""
@@ -154,10 +177,15 @@ def next_key(c: Container, mode: str, queue: list[str], skipped: list[str]) -> s
 
 def apply_answer(session: Session, c: Container, key: str, value: str | float) -> None:
     """Save one answer and commit."""
-    if key == "slot":
+    pk = plant_key(key)
+    if pk:
+        setattr(_plant(c, pk[0]), pk[1], str(value))
+    elif key == "slot":
         slot = session.scalars(select(Slot).where(Slot.user_id == c.user_id, Slot.code == value)).one()
         if c.slot_id != slot.id:
             c.between_slot_id = None  # "between X and Y" no longer true after a move
+            if c.slot_id is not None:  # a real move (not a first placement) starts the adjustment period
+                carelog.log(session, c, "move", source="button", note=f"הועבר ל־{slot.code}", commit=False)
         c.slot_id = slot.id
     elif key == "status":
         c.status = str(value)

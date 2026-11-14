@@ -22,7 +22,7 @@ Owner decisions (14.11.2026): evening summary at 19:30; hosting on PythonAnywher
 
 2. Care profile per plant (deterministic inputs for the rules)
    - On `plant`: `water_need` low / medium / high and `feed_group`
-     (none_winter_herb / flowering / edible / succulent / foliage), default `None`.
+     (flowering / edible / herb / succulent / foliage), default `None`.
    - A small built-in catalog by Latin genus fills defaults for the 29 current plants
      (e.g. Aloe → low/succulent, Ocimum → high/edible, Cyclamen → medium/flowering).
      Unknown plants stay `None` and appear in `/missing`, asked with buttons (reuse the Task 02 question engine).
@@ -35,7 +35,7 @@ Owner decisions (14.11.2026): evening summary at 19:30; hosting on PythonAnywher
        hanging ×0.8; unknown volume → no factor.
      - a container with several plants (shared soil) uses the thirstiest plant.
      - per-container learned adjustment in days (step 5), limited to ±50% of the interval.
-   - Suggested amount ≈ 20% of the estimated soil volume, shown as approximate ("≈ 1.2 ל׳, עד שמתחיל לנקז").
+   - Suggested amount ≈ 20% of the estimated soil volume, at most 10 L at once, shown as approximate ("≈ 1.2 ל׳").
    - Fertilizing by `feed_group` and season (starting values, all per the product label):
      flowering every 14 days in season, every 28 days in winter while in bloom; edible every 14 days Apr–Oct;
      herbs every 28 days Apr–Sep, none in winter; succulents every 56 days Apr–Sep only; foliage every 21 days Apr–Oct.

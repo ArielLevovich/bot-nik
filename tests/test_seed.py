@@ -50,11 +50,11 @@ def test_container_types_are_expanded():
 
 
 def test_missing_lists():
-    # 2, 3, 4 and 7 were completed on 14.11.2026; 21-24 still wait for details.
+    # 2, 3, 4 and 7 were completed on 14.11.2026; 21-24 still wait for details; 19 has an unidentified plant.
     with _session() as s:
         seed(s, load_yaml(), USER)
         with_missing = sorted(c.number for c in s.scalars(select(Container)) if missing_fields(c))
-        assert with_missing == [21, 22, 23, 24]
+        assert with_missing == [19, 21, 22, 23, 24]
 
 
 def test_pest_profile_reaches_plants():

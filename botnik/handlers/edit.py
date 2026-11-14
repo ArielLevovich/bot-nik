@@ -1,6 +1,6 @@
 """Conversation: complete missing details / change status / move a container.
 
-Entry buttons on the container card:  e:c:<n> (complete)  e:s:<n> (status)  e:m:<n> (move)
+Entry buttons:  e:c:<n> (complete)  e:s:<n> (status)  e:m:<n> (move)  e:p:<n> (care profile, from /care)
 While asking:  e:v:<option index>  e:other  e:skip  e:cancel  and typed text.
 State lives in context.user_data["edit"]; every answer is saved immediately.
 """
@@ -87,6 +87,10 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
         "other": False,
         "options": [],
     }
+    if mode == "p":  # care profile: both questions for every plant in the container
+        with _session(context) as s:
+            c = editing.find_container(s, update.effective_user.id, int(number))
+            context.user_data["edit"]["queue"] = editing.profile_keys(c) if c else []
     return await _ask_next(update, context, edit=True)
 
 
@@ -178,7 +182,7 @@ def build_conversation() -> ConversationHandler:
 
 def _conversation() -> ConversationHandler:
     return ConversationHandler(
-        entry_points=[CallbackQueryHandler(start, pattern=r"^e:[csm]:\d+$")],
+        entry_points=[CallbackQueryHandler(start, pattern=r"^e:[csmp]:\d+$")],
         states={
             ASK: [
                 CallbackQueryHandler(on_choice, pattern=r"^e:v:\d+$"),

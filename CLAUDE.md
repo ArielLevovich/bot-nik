@@ -7,7 +7,7 @@ It deals ONLY with the garden: watering, fertilizing, pests, plant health, seaso
 The owner speaks Hebrew. **Talk to the owner in Hebrew.** All bot text shown in Telegram is Hebrew (RTL).
 Code, identifiers, comments and commit messages are in English.
 
-Full product spec: `docs/SPEC.md`. Garden data: `data/garden.yaml`. Current task: `docs/TASK_02.md` (Task 01 done).
+Full product spec: `docs/SPEC.md` (full version: Claude Doc "בוט־ניק – אפיון וארכיטקטורה"). Garden data: `data/garden.yaml`. Current task: `docs/TASK_03.md`.
 
 ## Stack (decided – don't change without asking)
 - Python 3.12
@@ -33,6 +33,7 @@ Full product spec: `docs/SPEC.md`. Garden data: `data/garden.yaml`. Current task
 → `care_event` (plant_id or container_id, type: water / feed / prune / spray / repot / move / note, amount, product_id, timestamp, source: button / text / drip)
 
 Also: `product` (fertilizers and pest treatments at home, with usage rules), `area_sun` (owner-reported sun hours per area and season), `observation`, `task`, `issue` – add when the phase needs them, not before.
+Reminders (Task 03): `care_event` log, `task` (water/feed per container per day), `user_settings` (brief/evening times). Rules in `botnik/rules.py` (pure, tested); per-plant `water_need`/`feed_group` from a genus catalog in `botnik/care.py`. New nullable columns are added on startup by `db.add_missing_columns`.
 `missing` is computed (`botnik/missing.py`); only non-derivable items are stored (`container.missing_extra`). After the first seed the DB is the source of truth; `seed --reset` reloads the YAML.
 
 Key ideas:
@@ -43,8 +44,8 @@ Key ideas:
 
 ## Development phases
 0. Infrastructure – bot answers only the owner, DB exists, runs locally. ✓ done (Task 01)
-1. Garden intake – load `garden.yaml`, browse slots/containers/plants in Telegram, edit missing fields. ← **current** (browse done in Task 01, editing in Task 02)
-2. Health & watering – care log with buttons, simple watering reminders by plant type + pot, pest triage, morning brief (05:50) and evening summary. Move to PythonAnywhere.
+1. Garden intake – load `garden.yaml`, browse slots/containers/plants in Telegram, edit missing fields. ✓ built (Tasks 01–02); owner still filling 19, 21–24 and sun hours
+2. Health & watering – care log with buttons, simple watering reminders by plant type + pot, pest triage, morning brief (05:50) and evening summary (19:30). Move to PythonAnywhere. ← **current**: Task 03 (care log, rules, brief, summary, /settings) built; step 8 hosting pending. Pest triage + photos = Task 04.
 3. Drip system – manifolds (4 outlets, 70 cm tubes, 2.3 L/h unregulated), tube allocation, timer duration, placement suggestions.
 4. Smart model – Open-Meteo ET0, pot/zone coefficients, plant tolerances, distress index (מדד מצוקה), extreme-weather alerts.
 5. Extras – "ask Nik" free text, weekly report, seasonal calendar, vacation mode, time-lapse, calculators.

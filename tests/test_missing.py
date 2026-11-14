@@ -82,7 +82,9 @@ def test_real_garden():
     with make_session_factory(make_engine("sqlite://"))() as s:
         seed(s, load_yaml(), 111)
         by_number = {c.number: missing_fields(c) for c in s.scalars(select(Container))}
-    assert [n for n, m in sorted(by_number.items()) if m] == [21, 22, 23, 24]
+    # 19: its second plant is unidentified, so the care catalog can't fill its profile.
+    assert [n for n, m in sorted(by_number.items()) if m] == [19, 21, 22, 23, 24]
+    assert by_number[19] == ["plant1.water_need", "plant1.feed_group"]
     assert by_number[21] == ["level", "shape", "outer", "material", "color", "condition"]
     assert by_number[22] == ["shape", "outer", "material", "color", "condition"]
     assert by_number[24] == ["slot", "level", "shape", "outer", "material", "condition", "outer_raw_meaning"]

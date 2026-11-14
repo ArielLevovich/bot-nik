@@ -64,11 +64,12 @@ def test_card_without_measurements(session):
     assert "❓" in text and "צורה" in text
 
 
-def test_missing_lists_21_to_24(session):
+def test_missing_lists_19_and_21_to_24(session):
     text, keyboard = views.missing_view(session, USER)
-    assert sorted(set(_numbers(text))) == [21, 22, 23, 24]
+    assert sorted(set(_numbers(text))) == [19, 21, 22, 23, 24]
+    assert "כמה מים – לא מזוהה" in text
     callbacks = [b.callback_data for row in keyboard.inline_keyboard for b in row]
-    assert callbacks == ["g:c:21:m", "g:c:22:m", "g:c:23:m", "g:c:24:m"]
+    assert callbacks == ["g:c:19:m", "g:c:21:m", "g:c:22:m", "g:c:23:m", "g:c:24:m"]
 
 
 def test_unknown_container(session):

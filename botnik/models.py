@@ -6,9 +6,9 @@ Every table that belongs to a user has `user_id` so more users can be added late
 
 from __future__ import annotations
 
-from datetime import date
+from datetime import date, datetime
 
-from sqlalchemy import JSON, BigInteger, Date, Float, ForeignKey, Integer, String, Text, UniqueConstraint
+from sqlalchemy import JSON, BigInteger, Date, DateTime, Float, ForeignKey, Integer, String, Text, UniqueConstraint
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 
 STATUSES = ("good", "watch", "needs_care", "unknown")
@@ -73,6 +73,8 @@ class Container(Base):
 
     status: Mapped[str] = mapped_column(String(16), default="unknown")
     condition: Mapped[str | None] = mapped_column(Text)
+    # Learned from the owner's taps: + days when "not needed", - days when "looks dry" (limited in rules.py).
+    water_adjust_days: Mapped[float | None] = mapped_column(Float)
     # Only items that can't be computed from the fields; see botnik.missing.missing_fields().
     # (Column keeps its original name "missing" so existing databases still open.)
     missing_extra: Mapped[list] = mapped_column("missing", JSON, default=list)
@@ -103,6 +105,8 @@ class Plant(Base):
     status: Mapped[str] = mapped_column(String(16), default="unknown")
     condition: Mapped[str | None] = mapped_column(Text)
     pest_profile: Mapped[str] = mapped_column(String(16), default="normal")
+    water_need: Mapped[str | None] = mapped_column(String(8))  # low / medium / high
+    feed_group: Mapped[str | None] = mapped_column(String(16))  # flowering / edible / herb / succulent / foliage
     pests_history: Mapped[list] = mapped_column(JSON, default=list)
     planted_on: Mapped[date | None] = mapped_column(Date)
 
@@ -141,3 +145,49 @@ class AreaSun(Base):
     morning_from: Mapped[int | None] = mapped_column(Integer)  # hour, 5..15
     morning_to: Mapped[int | None] = mapped_column(Integer)
     afternoon_sun: Mapped[bool | None] = mapped_column()
+
+
+class CareEvent(Base):
+    """Something done to a container: water, feed, move, note. Times are naive UTC."""
+
+    __tablename__ = "care_event"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    user_id: Mapped[int] = mapped_column(BigInteger, index=True)
+    container_id: Mapped[int] = mapped_column(ForeignKey("container.id"), index=True)
+    plant_id: Mapped[int | None] = mapped_column(ForeignKey("plant.id"))
+    type: Mapped[str] = mapped_column(String(16))  # water / feed / move / note
+    amount_l: Mapped[float | None] = mapped_column(Float)
+    product_id: Mapped[int | None] = mapped_column(ForeignKey("product.id"))
+    at: Mapped[datetime] = mapped_column(DateTime)
+    source: Mapped[str] = mapped_column(String(16))  # button / command / task / baseline
+    note: Mapped[str | None] = mapped_column(Text)
+    batch: Mapped[str] = mapped_column(String(16), index=True)  # events saved together, undone together
+
+
+class Task(Base):
+    """A reminder in the morning brief: water or feed one container."""
+
+    __tablename__ = "task"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    user_id: Mapped[int] = mapped_column(BigInteger, index=True)
+    container_id: Mapped[int] = mapped_column(ForeignKey("container.id"), index=True)
+    type: Mapped[str] = mapped_column(String(8))  # water / feed
+    due_date: Mapped[date] = mapped_column(Date)
+    status: Mapped[str] = mapped_column(String(16), default="open")  # open / postponed / done / not_needed
+    reason: Mapped[str | None] = mapped_column(Text)
+    created_at: Mapped[datetime] = mapped_column(DateTime)
+    closed_at: Mapped[datetime | None] = mapped_column(DateTime)  # also the time of the last postpone
+    care_event_id: Mapped[int | None] = mapped_column(ForeignKey("care_event.id"))
+
+    container: Mapped[Container] = relationship()
+
+
+class UserSettings(Base):
+    __tablename__ = "user_settings"
+
+    user_id: Mapped[int] = mapped_column(BigInteger, primary_key=True)
+    brief_time: Mapped[str] = mapped_column(String(5), default="05:50")
+    evening_time: Mapped[str] = mapped_column(String(5), default="19:30")
+    timezone: Mapped[str] = mapped_column(String(32), default="Asia/Jerusalem")
