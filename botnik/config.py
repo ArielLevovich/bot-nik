@@ -11,6 +11,12 @@ from dotenv import load_dotenv
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 
 
+def db_path() -> Path:
+    """Where botnik.db lives: BOTNIK_DB_PATH (e.g. a Railway volume, /data/botnik.db) or the project root."""
+    load_dotenv(PROJECT_ROOT / ".env")
+    return Path(os.getenv("BOTNIK_DB_PATH") or PROJECT_ROOT / "botnik.db")
+
+
 class ConfigError(RuntimeError):
     """Raised when required configuration is missing or invalid."""
 

@@ -7,12 +7,10 @@ import logging
 from sqlalchemy import Engine, create_engine, inspect, text
 from sqlalchemy.orm import Session, sessionmaker
 
-from botnik.config import PROJECT_ROOT
+from botnik.config import db_path
 from botnik.models import Base
 
 log = logging.getLogger(__name__)
-
-DEFAULT_DB_URL = f"sqlite:///{PROJECT_ROOT / 'botnik.db'}"
 
 
 def add_missing_columns(engine: Engine) -> list[str]:
@@ -40,8 +38,14 @@ def add_missing_columns(engine: Engine) -> list[str]:
     return added
 
 
-def make_engine(url: str = DEFAULT_DB_URL) -> Engine:
-    engine = create_engine(url)
+def default_db_url() -> str:
+    path = db_path()
+    path.parent.mkdir(parents=True, exist_ok=True)
+    return f"sqlite:///{path}"
+
+
+def make_engine(url: str | None = None) -> Engine:
+    engine = create_engine(url or default_db_url())
     Base.metadata.create_all(engine)
     add_missing_columns(engine)
     return engine

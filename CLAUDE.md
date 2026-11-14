@@ -16,7 +16,8 @@ Full product spec: `docs/SPEC.md` (full version: Claude Doc "בוט־ניק – 
 - PyYAML for the seed file
 - pytest for tests
 - Config from `.env` (python-dotenv): `TELEGRAM_BOT_TOKEN`, `ALLOWED_USER_IDS`
-- Later phases only: Open-Meteo (weather/ET0), Claude API (free text + photos), hosting on PythonAnywhere
+- Hosting: Railway Hobby (owner bought it 14.11.2026; PythonAnywhere's always-on plan had gone up to $10). `railway.json` starts `python -m botnik.bot`; the DB lives on a Railway volume via `BOTNIK_DB_PATH=/data/botnik.db`. Move data with `/backup` and `/restore` in Telegram.
+- Later phases only: Open-Meteo (weather/ET0), Claude API (free text + photos)
 
 ## Hard rules
 - **Allow-list**: the bot answers only Telegram user IDs in `ALLOWED_USER_IDS`. Everyone else is ignored. Check this in one place (a decorator/filter), not per handler.
@@ -45,7 +46,7 @@ Key ideas:
 ## Development phases
 0. Infrastructure – bot answers only the owner, DB exists, runs locally. ✓ done (Task 01)
 1. Garden intake – load `garden.yaml`, browse slots/containers/plants in Telegram, edit missing fields. ✓ built (Tasks 01–02); owner still filling 19, 21–24 and sun hours
-2. Health & watering – care log with buttons, simple watering reminders by plant type + pot, pest triage, morning brief (05:50) and evening summary (19:30). Move to PythonAnywhere. ← **current**: Task 03 (care log, rules, brief, summary, /settings) built; step 8 hosting pending. Pest triage + photos = Task 04.
+2. Health & watering – care log with buttons, simple watering reminders by plant type + pot, pest triage, morning brief (05:50) and evening summary (19:30). Move to Railway. ← **current**: Task 03 (care log, rules, brief, summary, /settings) built; step 8 hosting on Railway in progress. Pest triage + photos = Task 04.
 3. Drip system – manifolds (4 outlets, 70 cm tubes, 2.3 L/h unregulated), tube allocation, timer duration, placement suggestions.
 4. Smart model – Open-Meteo ET0, pot/zone coefficients, plant tolerances, distress index (מדד מצוקה), extreme-weather alerts.
 5. Extras – "ask Nik" free text, weekly report, seasonal calendar, vacation mode, time-lapse, calculators.

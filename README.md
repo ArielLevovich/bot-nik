@@ -55,3 +55,11 @@ pytest
 ```bash
 mkdir -p backups && cp botnik.db backups/botnik-$(date +%F).db
 ```
+
+## השרת (Railway)
+
+הבוט רץ ב־Railway ומתעדכן לבד בכל `git push` ל־GitHub.
+- משתנים ב־Railway (לא ב־git): `TELEGRAM_BOT_TOKEN`, `ALLOWED_USER_IDS`, `BOTNIK_DB_PATH=/data/botnik.db`
+- Volume מחובר ב־`/data` – שם נשמר מסד הנתונים, וגיבוי לילי ב־`/data/backups` (14 ימים).
+- `/backup` בטלגרם שולח לך קובץ גיבוי. `/restore` ואז שליחת הקובץ – משחזר.
+- **לא להפעיל את הבוט במחשב כשהוא רץ בשרת** – שני עותקים גונבים זה לזה הודעות.

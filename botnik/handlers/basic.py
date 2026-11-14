@@ -27,5 +27,9 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
 
 async def cancel_idle(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     """/cancel when no question is open (an open conversation handles /cancel itself first)."""
-    if update.effective_message is not None:
+    if update.effective_message is None:
+        return
+    if context.user_data.pop("awaiting_restore", None):
+        await update.effective_message.reply_text("✖️ השחזור בוטל. לא שיניתי כלום.")
+    else:
         await update.effective_message.reply_text("אין כרגע שאלות פתוחות.")

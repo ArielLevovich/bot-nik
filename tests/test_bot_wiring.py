@@ -27,5 +27,5 @@ def test_only_myid_runs_before_the_gate():
 def test_all_other_handlers_are_behind_the_gate():
     groups = _app().handlers
     behind = [h for g, hs in groups.items() if g > GATE_GROUP for h in hs]
-    assert _commands(behind) == {"start", "garden", "missing", "sun", "cancel", "today", "water", "feed", "care", "settings"}
+    assert _commands(behind) == {"start", "garden", "missing", "sun", "cancel", "today", "water", "feed", "care", "settings", "backup", "restore"}
     assert any(isinstance(h, CallbackQueryHandler) for h in behind)

@@ -11,12 +11,13 @@ from pathlib import Path
 
 from sqlalchemy.orm import Session, sessionmaker
 from telegram import BotCommand
-from telegram.ext import Application, CallbackQueryHandler, CommandHandler
+from telegram.ext import Application, CallbackQueryHandler, CommandHandler, MessageHandler, filters
 
 from botnik.config import PROJECT_ROOT, Settings, load_settings
 from botnik.db import make_engine, make_session_factory
 from botnik.care import fill_care_defaults
-from botnik.handlers import basic, care, daily, edit, garden, sun
+from botnik import clock
+from botnik.handlers import admin, basic, care, daily, edit, garden, sun
 from botnik.handlers.auth import GATE_GROUP, PRE_GATE_GROUP, make_gate
 
 log = logging.getLogger(__name__)
@@ -33,7 +34,11 @@ COMMANDS = [
     BotCommand("start", "מה הבוט יודע לעשות"),
     BotCommand("myid", "מספר המשתמש שלי"),
     BotCommand("cancel", "הפסקת שאלות"),
+    BotCommand("backup", "קבלת קובץ גיבוי של הנתונים"),
+    BotCommand("restore", "שחזור מקובץ גיבוי"),
 ]
+
+BACKUP_TIME = "03:00"  # nightly copy of the database, kept for 14 days
 
 
 async def _post_init(app: Application) -> None:
@@ -42,6 +47,7 @@ async def _post_init(app: Application) -> None:
         fill_care_defaults(s)  # new plants / new columns get catalog defaults; set values are kept
     for user_id in app.bot_data["allowed_user_ids"]:
         daily.schedule_user(app, user_id)
+    app.job_queue.run_daily(admin.backup_job, time=clock.parse_hhmm(BACKUP_TIME), name="backup")
 
 
 def build_application(settings: Settings, session_factory: sessionmaker[Session] | None = None) -> Application:
@@ -74,6 +80,9 @@ def build_application(settings: Settings, session_factory: sessionmaker[Session]
     app.add_handler(CommandHandler("sun", sun.overview))
     app.add_handler(sun.build_conversation())
     app.add_handler(CallbackQueryHandler(sun.stale_button, pattern=r"^sun:"))  # after the conversation
+    app.add_handler(CommandHandler("backup", admin.backup_cmd))
+    app.add_handler(CommandHandler("restore", admin.restore_cmd))
+    app.add_handler(MessageHandler(filters.Document.ALL, admin.on_document))
     app.add_handler(CommandHandler("cancel", basic.cancel_idle))  # after both conversations
     return app
 

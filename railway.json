@@ -1,0 +1,9 @@
+{
+  "$schema": "https://railway.com/railway.schema.json",
+  "deploy": {
+    "startCommand": "python -m botnik.bot",
+    "numReplicas": 1,
+    "restartPolicyType": "ALWAYS",
+    "overlapSeconds": 0
+  }
+}

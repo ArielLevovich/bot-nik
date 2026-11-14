@@ -1,4 +1,4 @@
-# Task 03 – Phase 2 start: watering & fertilizing reminders, on a server
+# Task 03 – Phase 2 start: watering & fertilizing reminders, on a server (Railway)
 
 Goal: every morning at 05:50 the owner gets one message with what to water and fertilize today,
 marks each task with one tap, and gets a short evening summary at 19:30 — even when the PC is off.
@@ -7,7 +7,7 @@ Source: spec doc "בוט־ניק – אפיון וארכיטקטורה" (Claude 
 "פקודות ותפריטים", "מלאי החומרים בבית", "אפשרויות אירוח", phase 2 in "תוכנית פיתוח בשלבים".
 Phase 2 uses simple, deterministic rules by plant type and pot. Weather/ET0, distress and extreme alerts are Phase 4.
 
-Owner decisions (14.11.2026): evening summary at 19:30; hosting on PythonAnywhere Hacker (~$5/month).
+Owner decisions (14.11.2026): evening summary at 19:30; hosting on Railway Hobby ($5/month).
 
 ## Steps
 
@@ -68,15 +68,16 @@ Owner decisions (14.11.2026): evening summary at 19:30; hosting on PythonAnywher
    - `user_settings` table: `brief_time` (05:50), `evening_time` (19:30), `timezone` (Asia/Jerusalem).
    - `/settings` changes the two times with buttons (15-minute steps); jobs are rescheduled at once.
 
-8. Move to PythonAnywhere (Hacker plan, owner pays and creates the account)
-   - Check the Python version available there (need 3.12 or newer); clone the private GitHub repo
-     (fine-grained read-only token or deploy key); create the venv; upload `.env` and `botnik.db` by hand
-     (never through git).
-   - Always-on task: `python -m botnik.bot`. Polling is fine on a paid account.
-   - Scheduled task, daily: copy `botnik.db` to `backups/` and keep the last 14 copies.
-   - Stop the local copy for good: two copies with the same token steal each other's messages
-     (the single-instance lock only works on one machine). README: how to update the server
-     (`git pull`, restart the always-on task).
+8. Move to Railway (Hobby plan; changed from PythonAnywhere on 14.11.2026 – its always-on plan is now $10/month)
+   - Railway deploys from the private GitHub repo on every push (`railway.json`: start command, 1 replica,
+     restart always, no overlap between old and new deploys). Python version from `.python-version`.
+   - Variables in Railway (never in git): `TELEGRAM_BOT_TOKEN`, `ALLOWED_USER_IDS`, `BOTNIK_DB_PATH=/data/botnik.db`.
+   - A volume mounted at `/data` keeps the database across deploys.
+   - Moving the data: the owner sends `/backup` to the local bot (or takes `botnik.db`), stops the local bot,
+     then sends `/restore` + the file to the Railway bot. The bot checks the file, saves a safety copy, restores.
+   - Nightly backup job at 03:00 into `/data/backups/`, keeping 14 days; `/backup` any time sends a copy to Telegram.
+   - Stop the local copy for good: two copies with the same token steal each other's messages.
+     README: how updates reach the server (push to GitHub → Railway redeploys).
 
 9. Tests and wrap-up
    - Unit tests for every rule (intervals per need/season/pot, learning limits, feed groups, adjustment period,
@@ -84,7 +85,7 @@ Owner decisions (14.11.2026): evening summary at 19:30; hosting on PythonAnywher
      with a fake clock.
 
 ## Done when
-- The morning brief arrives at 05:50 from PythonAnywhere while the owner's PC is off.
+- The morning brief arrives at 05:50 from Railway while the owner's PC is off.
 - Tapping `✓` on a watering task logs it, and the pot's card shows "last watered: today".
 - The evening summary arrives at 19:30 with what is still open.
 - `/water` and `/feed` work for a whole area and for one pot, with undo.
