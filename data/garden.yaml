@@ -54,7 +54,7 @@ container_types:
     shape: elliptical
     material: plastic
     color: red
-    outer: {length: 60, width: null, height: 25}
+    outer: {length: 60, width: 28, height: 25}   # רוחב נמדד 14.11.2026
     sections: [A, B]          # חוצץ מוגבה מעל המעקה; כל צד = אזור שתילה עם אדמה משותפת
     plants_per_section: 2
   red_rail_small:
@@ -86,12 +86,11 @@ containers:
     level: railing
     type: red_rail_large
     plants:
-      - {name_he: רקפת, name_en: Cyclamen, latin: Cyclamen persicum, latin_verified: false, section: A, note: "לבנה ואדומה, שתיים באותו צד"}
-      - {name_he: רקפת, name_en: Cyclamen, latin: Cyclamen persicum, latin_verified: false, section: A}
-      - {name_he: רקפת, name_en: Cyclamen, latin: Cyclamen persicum, latin_verified: false, section: B, note: "ורודה"}
+      - {name_he: רקפת, name_en: Cyclamen, latin: Cyclamen persicum, latin_verified: false, section: A, note: "לבנה"}
+      - {name_he: רקפת, name_en: Cyclamen, latin: Cyclamen persicum, latin_verified: false, section: A, note: "ורודה"}
+      - {name_he: רקפת, name_en: Cyclamen, latin: Cyclamen persicum, latin_verified: false, section: B, note: "אדומה"}
     status: watch
     condition: "די נפולות, הבסיס של כל רקפת נראה טוב"
-    missing: [outer.width, section_assignment_by_color]
 
   - id: 3
     slot: M3
@@ -99,11 +98,10 @@ containers:
     level: railing
     type: red_rail_small
     plants:
-      - {name_he: סלסלי כסף, name_en: Sweet alyssum, latin: Lobularia maritima, latin_verified: true}
+      - {name_he: סלסלי כסף, name_en: Sweet alyssum, latin: Lobularia maritima, latin_verified: true, section: AB, note: "במרכז, מעל החוצץ; השורשים מתפשטים לשני הצדדים"}
     status: good
     condition: "טוב ופורח"
     planted: 2026-10-26   # "כשבועיים לפני הרישום"
-    missing: [section]
 
   - id: 4
     slot: N2
@@ -111,12 +109,11 @@ containers:
     shape: elliptical
     material: plastic
     color: black
-    outer: {length: 36, width: null, height: 17}
+    outer: {length: 36, width: 16, height: 17}   # רוחב נמדד 14.11.2026
     plants:
       - {name_he: לימונית, name_en: Lemon balm, latin: Melissa officinalis, latin_verified: true}
     status: watch
     condition: "מוקדם לדעת אם יש צמיחה חדשה"
-    missing: [outer.width]
 
   - id: 5
     slot: N1
@@ -153,7 +150,6 @@ containers:
     status: watch
     condition: "עלים תחתונים מצהיבים, פורח בנובמבר"
     sun_note: "שמש דרום־מזרחית חזקה"
-    missing: [outer.width]
 
   - id: 8
     slot: M2

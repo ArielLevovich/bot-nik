@@ -36,22 +36,24 @@ def test_container_types_are_expanded():
         seed(s, load_yaml(), USER)
         c2 = s.scalars(select(Container).filter_by(number=2)).one()
         assert c2.shape == "elliptical"
-        assert c2.outer_length_cm == 60 and c2.outer_width_cm is None
+        assert (c2.outer_length_cm, c2.outer_width_cm, c2.outer_height_cm) == (60, 28, 25)
         assert c2.sections == ["A", "B"]
         assert c2.slot.code == "N3"
         assert [p.section for p in c2.plants] == ["A", "A", "B"]
-        assert estimate_container(c2) is None  # width unknown
+        assert estimate_container(c2) is not None
 
         c3 = s.scalars(select(Container).filter_by(number=3)).one()
         assert c3.shape == "roundish" and c3.between_slot.code == "M4"
+        assert c3.plants[0].section == "AB"  # planted in the center, over the divider
         assert estimate_container(c3) is not None
 
 
 def test_missing_lists():
+    # 2, 3, 4 and 7 were completed on 14.11.2026; 21-24 still wait for details.
     with _session() as s:
         seed(s, load_yaml(), USER)
         with_missing = sorted(c.number for c in s.scalars(select(Container)) if c.missing)
-        assert with_missing == [2, 3, 4, 7, 21, 22, 23, 24]
+        assert with_missing == [21, 22, 23, 24]
 
 
 def test_pest_profile_reaches_plants():
