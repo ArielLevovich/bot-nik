@@ -7,7 +7,7 @@ It deals ONLY with the garden: watering, fertilizing, pests, plant health, seaso
 The owner speaks Hebrew. **Talk to the owner in Hebrew.** All bot text shown in Telegram is Hebrew (RTL).
 Code, identifiers, comments and commit messages are in English.
 
-Full product spec: `docs/SPEC.md`. Garden data: `data/garden.yaml`. Current task: `docs/TASK_01.md`.
+Full product spec: `docs/SPEC.md`. Garden data: `data/garden.yaml`. Current task: `docs/TASK_02.md` (Task 01 done).
 
 ## Stack (decided – don't change without asking)
 - Python 3.12
@@ -41,8 +41,8 @@ Key ideas:
 - `null` = not provided yet. Keep a `missing` list so the bot can ask for it.
 
 ## Development phases
-0. Infrastructure – bot answers only the owner, DB exists, runs locally. ← **current**
-1. Garden intake – load `garden.yaml`, browse slots/containers/plants in Telegram, edit missing fields.
+0. Infrastructure – bot answers only the owner, DB exists, runs locally. ✓ done (Task 01)
+1. Garden intake – load `garden.yaml`, browse slots/containers/plants in Telegram, edit missing fields. ← **current** (browse done in Task 01, editing in Task 02)
 2. Health & watering – care log with buttons, simple watering reminders by plant type + pot, pest triage, morning brief (05:50) and evening summary. Move to PythonAnywhere.
 3. Drip system – manifolds (4 outlets, 70 cm tubes, 2.3 L/h unregulated), tube allocation, timer duration, placement suggestions.
 4. Smart model – Open-Meteo ET0, pot/zone coefficients, plant tolerances, distress index (מדד מצוקה), extreme-weather alerts.
