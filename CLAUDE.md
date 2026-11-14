@@ -47,7 +47,7 @@ Key ideas:
 ## Development phases
 0. Infrastructure – bot answers only the owner, DB exists, runs locally. ✓ done (Task 01)
 1. Garden intake – load `garden.yaml`, browse slots/containers/plants in Telegram, edit missing fields. ✓ built (Tasks 01–02); owner still filling 19, 21–24 and sun hours
-2. Health & watering – care log with buttons, simple watering reminders by plant type + pot, pest triage, morning brief (05:50) and evening summary (19:30). Move to Railway. ← **current**: Task 03 (care log, rules, brief, summary, /settings) built; step 8 hosting on Railway in progress. Pest triage + photos = Task 04.
+2. Health & watering – care log with buttons, simple watering reminders by plant type + pot, pest triage, morning brief (05:50) and evening summary (19:30). Move to Railway. ← **current**: Task 03 done; live on Railway since 14.11.2026 (data restored there; the local botnik.db is now an old copy – never run the bot locally while Railway runs). Waiting for the first real 05:50 brief; then Task 04 (pest triage + photos). Pest triage + photos = Task 04.
 3. Drip system – manifolds (4 outlets, 70 cm tubes, 2.3 L/h unregulated), tube allocation, timer duration, placement suggestions.
 4. Smart model – Open-Meteo ET0, pot/zone coefficients, plant tolerances, distress index (מדד מצוקה), extreme-weather alerts.
 5. Extras – "ask Nik" free text, weekly report, seasonal calendar, vacation mode, time-lapse, calculators.
