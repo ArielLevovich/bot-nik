@@ -1,0 +1,14 @@
+# Secrets
+.env
+
+# Local database
+botnik.db
+*.db
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.pytest_cache/
+*.egg-info/

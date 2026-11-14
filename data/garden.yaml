@@ -1,0 +1,379 @@
+# בוט־ניק – נתוני הגינה ההתחלתיים (seed)
+# מקור: רשימת המדידות מ־9.11.2026 + מפת המרפסת.
+# הקובץ הזה הוא מקור האמת עד שהבוט עולה. בשלב 1 הוא נטען למסד הנתונים,
+# ומאז השינויים נעשים דרך הבוט, לא כאן.
+#
+# מוסכמות:
+#   - כל המידות בס"מ, חיצוניות, נמדדו כשהצמח שתול. נפח פנימי מחושב בקוד.
+#   - null = לא נמסר עדיין. כל שדה חסר מופיע ב־missing של המיכל.
+#   - latin_verified: false = שם מדעי לפי הזיהוי שלי, לאימות מתמונה או מתווית.
+#   - slot: קוד מהמפה. מיכל שעומד בין שני מקטעים מקבל slot + between.
+
+garden:
+  name: מרפסת בית
+  city: כפר סבא
+  lat: 32.18          # מעוגל לרמת עיר
+  lon: 34.91
+  timezone: Asia/Jerusalem
+  shape: U
+  floor_cm: [335, 460]
+  ceiling_height_cm: 270
+  ceiling: concrete      # תקרת בטון מלאה, מאוורר תקרה עם תאורה במרכז
+  floor_surface: light outdoor tiles
+  walls_cladding: light stone
+  fan: true
+  ac_condenser: unknown
+  railings:
+    main:  {length_cm: 473, height_cm: 99, material: glass, facing: SE (לאימות)}
+    north: {length_cm: 291, height_cm: 99, material: glass, facing: N}
+  back_wall: {width_cm: 220, height_cm: 215, material: concrete, window: false}
+  upper_opening: {height_cm: 56, width_cm: 220, open_to_outside: true, rain_enters: unknown}
+  shelf: "מדף בטון נמוך הצמוד לוויטרינה, לאורך שני המעקות"
+
+slots:
+  - {code: M1, area: main_railing, note: "ליד קיר הבטון והעמוד"}
+  - {code: M2, area: main_railing}
+  - {code: M3, area: main_railing}
+  - {code: M4, area: main_railing}
+  - {code: M5, area: main_railing, note: "לפני הפינה, ליד העמוד השמאלי"}
+  - {code: P1, area: corner, note: "פינה בין המעקות, מאחורי העמוד המזרחי"}
+  - {code: N1, area: north_railing, note: "קרוב לפינה"}
+  - {code: N2, area: north_railing}
+  - {code: N3, area: north_railing, note: "קרוב לקיר הבית"}
+  - {code: G1, area: upper_opening, note: "פתח עליון, צד שמאל"}
+  - {code: G2, area: upper_opening, note: "פתח עליון, צד ימין"}
+  - {code: K1, area: back_wall}
+  - {code: K2, area: back_wall}
+  - {code: H1, area: ceiling_hanging, note: "וו בתקרה ליד קיר הבטון"}
+  - {code: E1, area: entrance, note: "צד ימין של הכניסה, פנוי לאדניות", free: true}
+
+# סוגי מיכלים חוזרים
+container_types:
+  red_rail_large:
+    description: "אדנית מעקה אדומה גדולה, אליפטית, יושבת על המעקה משני צדדיו"
+    shape: elliptical
+    material: plastic
+    color: red
+    outer: {length: 60, width: null, height: 25}
+    sections: [A, B]          # חוצץ מוגבה מעל המעקה; כל צד = אזור שתילה עם אדמה משותפת
+    plants_per_section: 2
+  red_rail_small:
+    description: "אדנית מעקה אדומה קטנה, עגלגלה, יושבת על המעקה משני צדדיו"
+    shape: roundish
+    material: plastic
+    color: red
+    outer: {diameter: 30, height: 25}
+    sections: [A, B]
+    plants_per_section: 1
+
+containers:
+  - id: 1
+    slot: M4
+    position_note: "קרוב ל־M4, לכיוון פנים המרפסת; שמש בוקר דרך הזכוכית"
+    level: floor
+    stand_height_cm: 54
+    shape: round
+    material: ceramic
+    color: white
+    outer: {diameter: 30, height: 22}
+    plants:
+      - {name_he: חרציות, name_en: Chrysanthemum, latin: Chrysanthemum × morifolium, latin_verified: false, note: "לבן, ורוד וצהוב"}
+    status: good
+    condition: "בפריחה"
+
+  - id: 2
+    slot: N3
+    level: railing
+    type: red_rail_large
+    plants:
+      - {name_he: רקפת, name_en: Cyclamen, latin: Cyclamen persicum, latin_verified: false, section: A, note: "לבנה ואדומה, שתיים באותו צד"}
+      - {name_he: רקפת, name_en: Cyclamen, latin: Cyclamen persicum, latin_verified: false, section: A}
+      - {name_he: רקפת, name_en: Cyclamen, latin: Cyclamen persicum, latin_verified: false, section: B, note: "ורודה"}
+    status: watch
+    condition: "די נפולות, הבסיס של כל רקפת נראה טוב"
+    missing: [outer.width, section_assignment_by_color]
+
+  - id: 3
+    slot: M3
+    between: M4
+    level: railing
+    type: red_rail_small
+    plants:
+      - {name_he: סלסלי כסף, name_en: Sweet alyssum, latin: Lobularia maritima, latin_verified: true}
+    status: good
+    condition: "טוב ופורח"
+    planted: 2026-10-26   # "כשבועיים לפני הרישום"
+    missing: [section]
+
+  - id: 4
+    slot: N2
+    level: railing_hanging
+    shape: elliptical
+    material: plastic
+    color: black
+    outer: {length: 36, width: null, height: 17}
+    plants:
+      - {name_he: לימונית, name_en: Lemon balm, latin: Melissa officinalis, latin_verified: true}
+    status: watch
+    condition: "מוקדם לדעת אם יש צמיחה חדשה"
+    missing: [outer.width]
+
+  - id: 5
+    slot: N1
+    level: shelf
+    shape: rectangular
+    material: plastic
+    color: black
+    outer: {length: 57, width: 20, height: 14}
+    plants:
+      - {name_he: דיכונדריה ירוקה, name_en: Dichondra, latin: Dichondra repens, latin_verified: false, note: "בשני הצדדים"}
+      - {name_he: אקסום, name_en: Persian violet, latin: Exacum affine, latin_verified: true, note: "במרכז"}
+    status: good
+    condition: "האקסום מוציא פרחים קטנים, הדיכונדריה גדלה"
+
+  - id: 6
+    slot: P1
+    level: floor
+    shape: round
+    material: plastic (thick)
+    color: dark grey
+    outer: {diameter: 56, height: 54}
+    plants:
+      - {name_he: ציפור גן עדן, name_en: Bird of paradise, latin: Strelitzia reginae, latin_verified: false, note: "לאימות מול Strelitzia nicolai לפי העלים והגובה"}
+    status: watch
+    condition: "עלים תחתונים יבשים, יש צמיחה חדשה במרכז"
+    sun_note: "העמוד מסתיר חלקית; שמש דרום־מזרחית משני צדי העמוד"
+
+  - id: 7
+    slot: M5
+    level: railing
+    type: red_rail_large
+    plants:
+      - {name_he: גרניום אדום, name_en: Zonal geranium, latin: Pelargonium × hortorum, latin_verified: false, note: "במרכז האדנית"}
+    status: watch
+    condition: "עלים תחתונים מצהיבים, פורח בנובמבר"
+    sun_note: "שמש דרום־מזרחית חזקה"
+    missing: [outer.width]
+
+  - id: 8
+    slot: M2
+    between: M3
+    level: railing
+    type: red_rail_small
+    plants:
+      - {name_he: לפופית הבטטה, name_en: Sweet potato vine, latin: Ipomoea batatas, latin_verified: true, section: A, note: "סגול כהה"}
+      - {name_he: באק צוי, name_en: Bok choy, latin: Brassica rapa subsp. chinensis, latin_verified: true, section: B, note: "מראשים מהסופר, ניסוי"}
+    status: needs_care
+    condition: "באק צוי נראה מתייבש, מצב השורשים לא ידוע; הלפופית מעט מיובשת"
+
+  - id: 9
+    slot: M5
+    position_note: "צמוד לעמוד השמאלי"
+    level: shelf
+    shape: rectangular
+    material: plastic
+    color: dark grey
+    outer: {length: 50, width: 20, height: 20}
+    plants:
+      - {name_he: בזיליקום מג'יק, name_en: Magic basil, latin: "Ocimum × hybrid ('Magic Mountain'?)", latin_verified: false}
+    status: needs_care
+    condition: "נפול מאוד, ככל הנראה מהקור"
+
+  - id: 10
+    slot: M3
+    level: shelf
+    shape: rectangular
+    material: plastic
+    color: black
+    outer: {length: 39, width: 20, height: 16}
+    plants:
+      - {name_he: שיבא, name_en: Tree wormwood, latin: Artemisia arborescens, latin_verified: true, note: "במרכז"}
+    status: good
+    condition: "שמור"
+
+  - id: 11
+    slot: M4
+    between: M5
+    level: shelf
+    shape: rectangular
+    material: plastic
+    color: black
+    outer: {length: 48, width: 19, height: 16}
+    plants:
+      - {name_he: רוזמרין, name_en: Rosemary, latin: Salvia rosmarinus, latin_verified: true}
+    status: good
+    condition: "שמור"
+
+  - id: 12
+    slot: M3
+    level: shelf
+    shape: round
+    material: ceramic
+    color: blue
+    outer: {diameter: 19, height: 17}
+    substrate: succulent mix
+    plants:
+      - {name_he: אלוורה, name_en: Aloe vera, latin: Aloe vera, latin_verified: false}
+    status: good
+    condition: "מתפתחת די יפה"
+
+  - id: 13
+    slot: M2
+    between: M3
+    level: shelf
+    shape: rectangular
+    material: plastic
+    color: black
+    outer: {length: 38, width: 19, height: 16}
+    plants:
+      - {name_he: פיגם, name_en: Rue, latin: Ruta chalepensis, latin_verified: false, note: "או Ruta graveolens"}
+    status: good
+    condition: "די בסדר, היה מעט נפול כשהגיע"
+
+  - id: 14
+    slot: M2
+    between: M3
+    level: shelf
+    shape: round
+    material: plastic
+    color: black
+    outer: {diameter: 16, height: 15}
+    plants:
+      - {name_he: לבנדר משונן, name_en: French lavender, latin: Lavandula dentata, latin_verified: true}
+    status: good
+    condition: "גדל יפה"
+
+  - id: 15
+    slot: M2
+    level: shelf
+    shape: round
+    material: ceramic
+    color: light blue
+    outer: {diameter: 19, height: 19}
+    plants:
+      - {name_he: גרניום צרפתי, name_en: Regal geranium, latin: Pelargonium × domesticum, latin_verified: false}
+    status: watch
+    condition: "צמח ותיק שמתפתח יפה; אולי זקוק לדשן"
+
+  - id: 16
+    slot: M1
+    between: M2
+    level: shelf
+    shape: round
+    material: plastic (nursery pot)
+    color: white
+    outer: {diameter: 12, height: 10}
+    substrate: succulent mix
+    plants:
+      - {name_he: אלוורה (שתיל), name_en: Aloe vera, latin: Aloe vera, latin_verified: false}
+    status: watch
+    condition: "התחיל טוב, העלים מעט מצהיבים"
+
+  - id: 17
+    slot: M1
+    between: M2
+    level: shelf
+    shape: round
+    material: plastic (nursery pot)
+    color: terracotta
+    outer: {diameter: 12, height: 10}
+    substrate: succulent mix
+    plants:
+      - {name_he: אלוורה (שתיל), name_en: Aloe vera, latin: Aloe vera, latin_verified: false}
+    status: watch
+    condition: "התחיל טוב, העלים מעט מצהיבים"
+
+  - id: 18
+    slot: M1
+    between: M2
+    level: shelf
+    shape: round
+    material: plastic (nursery pot)
+    color: white
+    outer: {diameter: 12, height: 10}
+    substrate: succulent mix
+    plants:
+      - {name_he: אלוורה (שתיל), name_en: Aloe vera, latin: Aloe vera, latin_verified: false}
+    status: watch
+    condition: "התחיל טוב, העלים מעט מצהיבים"
+
+  - id: 19
+    slot: N1
+    between: N2
+    level: railing
+    type: red_rail_small
+    plants:
+      - {name_he: מנתור, name_en: Stock, latin: Matthiola incana, latin_verified: false, section: A, note: "פרחים ורדרדים"}
+      - {name_he: לא מזוהה, name_en: unknown, latin: null, latin_verified: false, section: B, note: "שתילים צעירים מאוד"}
+    status: good
+    condition: "המנתור מעולה ופורח; השתילים בהתפתחות"
+
+  - id: 20
+    slot: M1
+    level: hanging
+    hang_height_cm: 60
+    hang_note: "וו על אדנית ריקה שעל המעקה"
+    shape: round
+    material: plastic
+    color: black
+    outer: {diameter: 21, height: 11.5}
+    plants:
+      - {name_he: מרווה, name_en: Sage, latin: Salvia fruticosa, latin_verified: false, note: "או Salvia officinalis"}
+    status: good
+    condition: "די טוב, שתיל שמתפתח יפה"
+    planted: 2026-10-26
+
+  # --- ממתינים להשלמה ---
+  - id: 21
+    slot: G1
+    level: null
+    plants:
+      - {name_he: הויה, name_en: Hoya, latin: Hoya carnosa, latin_verified: false}
+    status: unknown
+    condition: null
+    pests_history: ["כנימה קמחית חוזרת"]
+    pest_profile: sensitive      # מסלול רגיש: קונפידור בהשקיה למצע כטיפול עיקרי
+    missing: [level, shape, material, color, outer, condition]
+
+  - id: 22
+    slot: H1
+    level: hanging
+    plants:
+      - {name_he: הויה (חדשה), name_en: Hoya, latin: Hoya sp., latin_verified: false}
+    status: unknown
+    pest_profile: sensitive
+    missing: [shape, material, color, outer, condition]
+
+  - id: 23
+    slot: H1
+    level: hanging
+    plants:
+      - {name_he: חמציץ לבן, name_en: White oxalis, latin: Oxalis sp., latin_verified: false}
+    status: unknown
+    missing: [shape, material, color, outer, condition]
+
+  - id: 24
+    slot: null
+    level: null
+    color: pink
+    outer_raw: "10 × 12"
+    plants:
+      - {name_he: לבנדר מנוצה, name_en: Fernleaf lavender, latin: Lavandula pinnata, latin_verified: false, note: "או Lavandula multifida"}
+    status: unknown
+    missing: [slot, level, shape, material, outer (meaning of 10×12), condition]
+
+# מלאי חומרים בבית
+products:
+  - {name: מדשן אצות, kind: fertilizer, npk: null, note: "שם המוצר ו־NPK יימסרו"}
+  - {name: שמן נים, kind: pest_treatment, rules: "ריסוס בערב בלבד, לא בשמש ולא בחום; בדיקה על עלה אחד; חזרה אחרי כשבוע"}
+  - {name: קונפידור, kind: pest_treatment, rules: "לפי התווית, עדיף בהשקיה למצע; לא בזמן פריחה; לא על צמחי מאכל ותבלינים; לא עובד נגד אקריות ולא נגד קמחון"}
+
+irrigation:
+  drip:
+    connected: false
+    disconnected_since: 2026-11-04
+    manifold_outlets: 4
+    tube_length_cm: 70
+    flow_lph_per_tube: 2.3
+    regulated: false
+    manifolds: null   # כמה ואיפה – ימולא בשלב 3
