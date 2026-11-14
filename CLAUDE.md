@@ -14,6 +14,7 @@ Full product spec: `docs/SPEC.md` (full version: Claude Doc "בוט־ניק – 
 - python-telegram-bot v21+ (async), polling during development; its built-in JobQueue for scheduling
 - SQLite via SQLAlchemy 2.x (single file `botnik.db`); migrate to Postgres later only if needed
 - PyYAML for the seed file
+- tzdata (time-zone data for Asia/Jerusalem on servers; approved by the owner 14.11.2026)
 - pytest for tests
 - Config from `.env` (python-dotenv): `TELEGRAM_BOT_TOKEN`, `ALLOWED_USER_IDS`
 - Hosting: Railway Hobby (owner bought it 14.11.2026; PythonAnywhere's always-on plan had gone up to $10). `railway.json` starts `python -m botnik.bot`; the DB lives on a Railway volume via `BOTNIK_DB_PATH=/data/botnik.db`. Move data with `/backup` and `/restore` in Telegram.

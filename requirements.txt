@@ -3,3 +3,4 @@ SQLAlchemy>=2.0,<3
 PyYAML>=6.0
 python-dotenv>=1.0
 pytest>=8.0
+tzdata>=2024.1          # time-zone data (Asia/Jerusalem) for servers without it; approved 14.11.2026
