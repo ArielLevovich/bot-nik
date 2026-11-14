@@ -54,7 +54,14 @@ not the aiogram/APScheduler/FastAPI listed as options in the spec).
    - Plants grouped by area (spec command), each opens the plant's container card.
    - Register the new commands in the Telegram menu.
 
-7. Tests and wrap-up
+7. Sun hours per area – asked in Telegram
+   - Store per area (and optionally per slot, overriding the area): morning sun from–to, afternoon sun yes/no,
+     plus season (winter now; summer asked again in spring). Fields stay `None` until answered.
+   - `/sun` (and a reminder line in `/missing` while any area is unanswered) walks the areas one by one
+     with hour buttons (05–14) and `⏭ דלג` / `✖️ ביטול`.
+   - The container card shows its slot's sun hours. Data only for now; calculations use it in Phase 4.
+
+8. Tests and wrap-up
    - `pytest` passes; conversation steps tested on the pure functions (parsing, next-question logic, saving),
      not on Telegram itself.
    - The owner fills in containers 21–24 through the bot as the real-life check.
@@ -66,10 +73,11 @@ not the aiogram/APScheduler/FastAPI listed as options in the spec).
 - Running `python -m botnik.seed` again does not overwrite anything.
 - Tests pass.
 
-## Open questions for the owner (ask before or during the task)
-- Photos per plant: the spec's Phase 1 says "every plant with a photo". Saving photos needs EXIF stripping,
-  which needs a new dependency (Pillow). Do it in this task, or leave photos for Phase 2 (pest checks from photos)?
-- Sun hours per area (spec "שלב 2: אזורים" table is empty): record them now (simple buttons per area:
-  morning from–to, afternoon yes/no), or wait for Phase 4 where they are used?
+- The owner answers sun hours for every area in `/sun`.
 
-Not in this task: care log, watering reminders, morning brief, weather, drip, LLM, hosting.
+## Decisions (owner, 14.11.2026)
+- Plant photos move to Phase 2 (with pest checks from photos and EXIF stripping).
+- Sun hours are collected now, by the bot.
+- Priority after this task: care information – watering and fertilizing (Phase 2 care log and reminders).
+
+Not in this task: photos, care log, watering reminders, morning brief, weather, drip, LLM, hosting.
