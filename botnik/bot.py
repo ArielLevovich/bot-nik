@@ -10,7 +10,7 @@ from telegram.ext import Application, CallbackQueryHandler, CommandHandler
 
 from botnik.config import Settings, load_settings
 from botnik.db import make_engine, make_session_factory
-from botnik.handlers import basic, edit, garden
+from botnik.handlers import basic, edit, garden, sun
 from botnik.handlers.auth import GATE_GROUP, PRE_GATE_GROUP, make_gate
 
 log = logging.getLogger(__name__)
@@ -18,6 +18,7 @@ log = logging.getLogger(__name__)
 COMMANDS = [
     BotCommand("garden", "כל הגינה"),
     BotCommand("missing", "עציצים שחסרים להם פרטים"),
+    BotCommand("sun", "שעות שמש לפי אזור"),
     BotCommand("start", "מה הבוט יודע לעשות"),
     BotCommand("myid", "מספר המשתמש שלי"),
     BotCommand("cancel", "הפסקת שאלות"),
@@ -43,6 +44,10 @@ def build_application(settings: Settings, session_factory: sessionmaker[Session]
     app.add_handler(CallbackQueryHandler(garden.on_button, pattern=r"^g:"))
     app.add_handler(edit.build_conversation())
     app.add_handler(CallbackQueryHandler(edit.stale_button, pattern=r"^e:"))  # after the conversation
+    app.add_handler(CommandHandler("sun", sun.overview))
+    app.add_handler(sun.build_conversation())
+    app.add_handler(CallbackQueryHandler(sun.stale_button, pattern=r"^sun:"))  # after the conversation
+    app.add_handler(CommandHandler("cancel", basic.cancel_idle))  # after both conversations
     return app
 
 

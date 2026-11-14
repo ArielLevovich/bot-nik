@@ -14,6 +14,7 @@ from sqlalchemy.orm import Session
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup
 
 from botnik import labels as L
+from botnik import sun
 from botnik.editing import askable
 from botnik.missing import missing_fields
 from botnik.models import Container, Slot
@@ -30,6 +31,7 @@ START_TEXT = (
     "מה אפשר כבר עכשיו:\n"
     "/garden – כל הגינה לפי אזורים ומיקומים\n"
     "/missing – עציצים שחסרים להם פרטים\n"
+    "/sun – שעות שמש לפי אזור\n"
     "/myid – מספר המשתמש שלך בטלגרם"
 )
 
@@ -185,6 +187,10 @@ def container_card(session: Session, user_id: int, number: int, back: str = "a")
         lines.append(f"   {escape(c.position_note)}")
     if c.sun_note:
         lines.append(f"☀️ {escape(c.sun_note)}")
+    if c.slot:
+        season = sun.season_for()
+        row = sun.get(session, user_id, c.slot.area, season)
+        lines.append(f"☀️ <b>שמש באזור ({sun.SEASON_HE[season]}):</b> {sun.describe(row)}")
 
     lines.append("")
     if c.type_code:
@@ -255,11 +261,34 @@ def missing_view(session: Session, user_id: int) -> tuple[str, InlineKeyboardMar
         for c in session.scalars(select(Container).where(Container.user_id == user_id).order_by(Container.number))
         if missing_fields(c)
     ]
+    sun_left = len(sun.unanswered(session, user_id, sun.season_for()))
+    sun_line = f"☀️ עוד לא סימנת שעות שמש ל־{sun_left} אזורים – /sun" if sun_left else ""
     if not containers:
-        return "✅ אין פרטים חסרים. כל העציצים מלאים!", InlineKeyboardMarkup([])
+        text = "✅ אין פרטים חסרים בעציצים. כל העציצים מלאים!"
+        return (f"{text}\n\n{sun_line}" if sun_line else text), InlineKeyboardMarkup([])
     lines = ["❓ <b>עציצים שחסרים להם פרטים</b>", ""]
     for c in containers:
         lines.append(container_line(c))
         lines.append("   חסר: " + ", ".join(escape(L.missing_he(m)) for m in missing_fields(c)))
     lines += ["", "בחר עציץ, ובכרטיס שלו לחץ ✏️ השלמת פרטים."]
+    if sun_line:
+        lines += ["", sun_line]
     return "\n".join(lines), InlineKeyboardMarkup(_container_buttons(containers, "m"))
+
+
+def sun_overview(session: Session, user_id: int) -> tuple[str, InlineKeyboardMarkup]:
+    season = sun.season_for()
+    lines = [f"☀️ <b>שעות שמש לפי אזור</b> · {sun.SEASON_HE[season]}", ""]
+    buttons = []
+    for area in sun.areas(session, user_id):
+        row = sun.get(session, user_id, area, season)
+        mark = "✅" if sun.is_answered(row) else "❓"
+        lines.append(f"{mark} <b>{escape(sun.area_label(area))}</b>: {sun.describe(row)}")
+        buttons.append(InlineKeyboardButton(f"✏️ {sun.area_label(area)}", callback_data=f"sun:a:{area}"))
+    lines += ["", "שמש ישירה = השמש עצמה מגיעה לעציצים (לא רק אור). מספיק בערך, לפי שעה עגולה."]
+    keyboard = []
+    left = sun.unanswered(session, user_id, season)
+    if left:
+        keyboard.append([InlineKeyboardButton(f"▶️ לענות על מה שחסר ({len(left)})", callback_data="sun:go")])
+    keyboard += [buttons[i : i + 2] for i in range(0, len(buttons), 2)]
+    return "\n".join(lines), InlineKeyboardMarkup(keyboard)

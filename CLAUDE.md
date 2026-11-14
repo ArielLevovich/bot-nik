@@ -32,7 +32,8 @@ Full product spec: `docs/SPEC.md`. Garden data: `data/garden.yaml`. Current task
 → `plant` (`container_id`, optional `section`, Hebrew/English/Latin name, `latin_verified`, status, condition text, `pest_profile`: normal / sensitive)
 → `care_event` (plant_id or container_id, type: water / feed / prune / spray / repot / move / note, amount, product_id, timestamp, source: button / text / drip)
 
-Also: `product` (fertilizers and pest treatments at home, with usage rules), `observation`, `task`, `issue` – add when the phase needs them, not before.
+Also: `product` (fertilizers and pest treatments at home, with usage rules), `area_sun` (owner-reported sun hours per area and season), `observation`, `task`, `issue` – add when the phase needs them, not before.
+`missing` is computed (`botnik/missing.py`); only non-derivable items are stored (`container.missing_extra`). After the first seed the DB is the source of truth; `seed --reset` reloads the YAML.
 
 Key ideas:
 - **Slots are fixed, containers move.** Moving a pot = changing its `slot_id`. Conditions belong to the slot.

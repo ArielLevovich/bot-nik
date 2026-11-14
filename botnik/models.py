@@ -122,3 +122,22 @@ class Product(Base):
     npk: Mapped[str | None] = mapped_column(String(32))
     rules: Mapped[str | None] = mapped_column(Text)
     note: Mapped[str | None] = mapped_column(Text)
+
+
+class AreaSun(Base):
+    """Sun hours for one balcony area in one season, as reported by the owner.
+
+    None = not answered yet. morning_sun False means "no morning sun" (then from/to stay None).
+    """
+
+    __tablename__ = "area_sun"
+    __table_args__ = (UniqueConstraint("user_id", "area", "season"),)
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    user_id: Mapped[int] = mapped_column(BigInteger, index=True)
+    area: Mapped[str] = mapped_column(String(32))
+    season: Mapped[str] = mapped_column(String(8))  # winter / summer
+    morning_sun: Mapped[bool | None] = mapped_column()
+    morning_from: Mapped[int | None] = mapped_column(Integer)  # hour, 5..15
+    morning_to: Mapped[int | None] = mapped_column(Integer)
+    afternoon_sun: Mapped[bool | None] = mapped_column()

@@ -23,3 +23,9 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     if update.effective_message is None:
         return
     await update.effective_message.reply_text(START_TEXT, parse_mode=ParseMode.HTML)
+
+
+async def cancel_idle(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    """/cancel when no question is open (an open conversation handles /cancel itself first)."""
+    if update.effective_message is not None:
+        await update.effective_message.reply_text("אין כרגע שאלות פתוחות.")
