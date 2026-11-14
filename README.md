@@ -14,7 +14,7 @@ cp .env.example .env             # ואז למלא את הטוקן מ-@BotFather
 ## הרצה
 
 ```bash
-python -m botnik.seed    # טוען את data/garden.yaml למסד הנתונים (אפשר להריץ שוב בלי כפילויות)
+python -m botnik.seed    # טעינה ראשונה בלבד של data/garden.yaml למסד הנתונים
 python -m botnik.bot     # מפעיל את הבוט
 ```
 
@@ -34,4 +34,6 @@ pytest
 - `/myid` – מספר המשתמש שלך (עובד גם לפני שנוספת לרשימה המורשית)
 
 שינוי בקוד דורש הפעלה מחדש של הבוט (Ctrl+C ואז שוב `python -m botnik.bot`).
-שינוי ב־`data/garden.yaml` דורש רק הרצה מחדש של `python -m botnik.seed`.
+אחרי הטעינה הראשונה, מסד הנתונים הוא מקור האמת והשינויים נעשים בבוט.
+הרצה חוזרת של `python -m botnik.seed` מסרבת לדרוס אותו.
+`python -m botnik.seed --reset` מוחק את כל השינויים מהבוט וטוען מחדש את `garden.yaml` (מבקש לכתוב yes).

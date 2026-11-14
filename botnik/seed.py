@@ -1,14 +1,19 @@
 """Load data/garden.yaml into the database.
 
-Usage: python -m botnik.seed
+Usage:
+    python -m botnik.seed           # first load only; refuses if the garden is already in the DB
+    python -m botnik.seed --reset   # wipe the owner's garden and load the YAML again (asks first)
 
-Idempotent: rows are matched by (user_id, slot code), (user_id, container number),
+After the first load the database is the source of truth and changes are made in the bot,
+so a plain re-run must never overwrite them.
+
+`seed()` itself is idempotent: rows are matched by (user_id, slot code), (user_id, container number),
 (container, plant position) and (user_id, product name), then inserted or updated.
-Running it twice gives the same database.
 """
 
 from __future__ import annotations
 
+import argparse
 import os
 import sys
 from pathlib import Path
@@ -16,7 +21,7 @@ from typing import Any
 
 import yaml
 from dotenv import load_dotenv
-from sqlalchemy import select
+from sqlalchemy import delete, func, select
 from sqlalchemy.orm import Session
 
 from botnik.config import PROJECT_ROOT, parse_user_ids
@@ -151,6 +156,20 @@ def seed(session: Session, data: dict[str, Any], user_id: int) -> dict[str, int]
     }
 
 
+def has_garden(session: Session, user_id: int) -> bool:
+    return bool(session.scalar(select(func.count()).select_from(Container).where(Container.user_id == user_id)))
+
+
+def reset_garden(session: Session, user_id: int) -> None:
+    """Delete all of this user's garden rows (other users are untouched)."""
+    container_ids = select(Container.id).where(Container.user_id == user_id)
+    session.execute(delete(Plant).where(Plant.container_id.in_(container_ids)))
+    session.execute(delete(Container).where(Container.user_id == user_id))
+    session.execute(delete(Slot).where(Slot.user_id == user_id))
+    session.execute(delete(Product).where(Product.user_id == user_id))
+    session.commit()
+
+
 def owner_user_id() -> int:
     """The single owner for now: the first ID in ALLOWED_USER_IDS."""
     load_dotenv(PROJECT_ROOT / ".env")
@@ -160,10 +179,25 @@ def owner_user_id() -> int:
     return min(ids)
 
 
-def main() -> None:
+def main(argv: list[str] | None = None) -> None:
+    parser = argparse.ArgumentParser(prog="python -m botnik.seed", description="Load data/garden.yaml into the database.")
+    parser.add_argument("--reset", action="store_true", help="wipe the garden in the database and load the YAML again")
+    args = parser.parse_args(argv)
+
     user_id = owner_user_id()
     engine = make_engine()
     with make_session_factory(engine)() as session:
+        if has_garden(session, user_id):
+            if not args.reset:
+                sys.exit(
+                    "The garden is already in the database, so nothing was changed.\n"
+                    "Changes are made in the bot now; loading the YAML again would overwrite them.\n"
+                    "To throw away the database and start over from garden.yaml: python -m botnik.seed --reset"
+                )
+            print("WARNING: this deletes every change made in the bot and reloads data/garden.yaml.")
+            if input("Type yes to continue: ").strip().lower() != "yes":
+                sys.exit("Cancelled. Nothing was changed.")
+            reset_garden(session, user_id)
         counts = seed(session, load_yaml(), user_id)
     print(
         f"Loaded {counts['slots']} slots, {counts['containers']} containers, "

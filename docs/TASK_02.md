@@ -1,13 +1,11 @@
-# Task 02 – Finish Phase 1 (garden intake from Telegram)
+# Task 02 – Phase 1 essentials (complete the garden from Telegram)
 
-Goal: the owner completes and maintains the garden **from Telegram**, without editing `garden.yaml`
-or sending measurements to a developer. After this task the database, not the YAML, is the source of truth.
+Goal: the owner completes the garden **from Telegram**, without editing `garden.yaml` or sending measurements
+to a developer. After this task the database, not the YAML, is the source of truth.
+Kept short on purpose (owner chose "option B", 14.11.2026) so watering and fertilizing (Task 03) come sooner.
 
-Phase 1 exit criterion (spec): every plant is registered and assigned to a container and a slot.
-
-Source: the spec doc "בוט־ניק – אפיון וארכיטקטורה" (Claude Docs), sections "מודל העציץ", "מפת מיקומים",
-"שלב 3: עציצים וצמחים" and "תוכנית פיתוח בשלבים". Stack stays as in CLAUDE.md (python-telegram-bot + JobQueue,
-not the aiogram/APScheduler/FastAPI listed as options in the spec).
+Source: the spec doc "בוט־ניק – אפיון וארכיטקטורה" (Claude Docs). Stack stays as in CLAUDE.md
+(python-telegram-bot + JobQueue, not the aiogram/APScheduler/FastAPI listed as options in the spec).
 
 ## Steps
 
@@ -15,7 +13,7 @@ not the aiogram/APScheduler/FastAPI listed as options in the spec).
    - `python -m botnik.seed` refuses to run when the database already has containers for the owner,
      and explains why. `--reset` wipes the owner's garden data and loads the YAML again (asks "type yes" first).
    - Update the README: after the first seed, changes are made in the bot.
-   - Tests: seed on a filled DB without `--reset` changes nothing.
+   - Tests: seed on a filled DB without `--reset` changes nothing; `--reset` reloads.
 
 2. Compute `missing` instead of hand-writing it
    - One function `missing_fields(container)` returns the core fields that are still `None`:
@@ -36,48 +34,36 @@ not the aiogram/APScheduler/FastAPI listed as options in the spec).
    - Each answer is saved immediately; at the end show the updated card with the new volume.
    - Tests: answer parsing (numbers, units, bad input), field order per shape, save + `missing` shrinks.
 
-4. Edit any field, not only missing ones
-   - Card button `✏️ עריכה` → list of editable fields → same question screens as step 3.
-   - Quick actions on the card: `🔄 שינוי מצב` (🟢🟡🔴⚪ buttons, then optional condition text),
-     `📍 הזזה` (choose new slot + level; moving keeps history for later phases – log a `move` care_event
-     only if `care_event` exists by then, otherwise just update).
-   - Plant level: edit names, `section` (A / B / center), Latin name + `latin_verified`, pest profile.
+4. Quick actions on the card
+   - `🔄 שינוי מצב`: 🟢🟡🔴⚪ buttons, then optional condition text (or skip).
+   - `📍 הזזה`: choose new slot, then level. Just updates the container (the care log comes in Task 03).
+   - Reuse the question screens from step 3.
 
-5. Add a new container and plant – `/add`
-   - Questions: slot → level → shape → dimensions → material → color → plant Hebrew name
-     (+ optional English/Latin) → section if the container has sections → status.
-   - Skippable fields simply stay `None` and show up in `/missing`.
-   - "Add another plant to this container?" at the end. Container number = next free number.
-   - Also a card button `➕ צמח` to add a plant to an existing container.
+5. Sun hours per area – asked in Telegram
+   - Store per area: morning sun from–to, afternoon sun yes/no, for the current season (winter now;
+     summer asked again in spring). Fields stay `None` until answered.
+   - `/sun` walks the areas one by one with hour buttons (05–14) and `⏭ דלג` / `✖️ ביטול`;
+     `/missing` adds a reminder line while any area is unanswered.
+   - The container card shows its slot's area sun hours. Data only for now; calculations use it in Phase 4.
 
-6. Plant list – `/plants`
-   - Plants grouped by area (spec command), each opens the plant's container card.
-   - Register the new commands in the Telegram menu.
-
-7. Sun hours per area – asked in Telegram
-   - Store per area (and optionally per slot, overriding the area): morning sun from–to, afternoon sun yes/no,
-     plus season (winter now; summer asked again in spring). Fields stay `None` until answered.
-   - `/sun` (and a reminder line in `/missing` while any area is unanswered) walks the areas one by one
-     with hour buttons (05–14) and `⏭ דלג` / `✖️ ביטול`.
-   - The container card shows its slot's sun hours. Data only for now; calculations use it in Phase 4.
-
-8. Tests and wrap-up
+6. Tests and wrap-up
    - `pytest` passes; conversation steps tested on the pure functions (parsing, next-question logic, saving),
      not on Telegram itself.
    - The owner fills in containers 21–24 through the bot as the real-life check.
 
 ## Done when
 - The owner completes containers 21–24 in Telegram and `/missing` says nothing is missing.
-- The owner moves one pot to another slot and changes one status from the card, and `/garden` shows it.
-- The owner adds one new plant with `/add` and sees it in `/garden` and `/plants`.
+- The owner moves one pot and changes one status from the card, and `/garden` shows it.
+- The owner answers sun hours for every area in `/sun`.
 - Running `python -m botnik.seed` again does not overwrite anything.
 - Tests pass.
 
-- The owner answers sun hours for every area in `/sun`.
-
 ## Decisions (owner, 14.11.2026)
+- Option B: essentials only. Postponed to a later task: `/add` (new container/plant), `➕ צמח` on the card,
+  `/plants`, the full "edit any field" menu, and editing plant names / Latin name / section / pest profile.
+  Until then, new plants are sent to the developer in chat and added to the DB.
 - Plant photos move to Phase 2 (with pest checks from photos and EXIF stripping).
 - Sun hours are collected now, by the bot.
-- Priority after this task: care information – watering and fertilizing (Phase 2 care log and reminders).
+- Next priority: care information – watering and fertilizing (Task 03, Phase 2 care log and reminders).
 
-Not in this task: photos, care log, watering reminders, morning brief, weather, drip, LLM, hosting.
+Not in this task: photos, `/add`, `/plants`, care log, watering reminders, morning brief, weather, drip, LLM, hosting.

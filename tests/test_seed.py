@@ -62,3 +62,76 @@ def test_pest_profile_reaches_plants():
         hoya = s.scalars(select(Container).filter_by(number=21)).one().plants[0]
         assert hoya.pest_profile == "sensitive"
         assert hoya.pests_history == ["כנימה קמחית חוזרת"]
+
+
+# --- Protection against re-seeding (Task 02, step 1) ---
+
+import pytest
+
+import botnik.seed as seed_module
+from botnik.seed import has_garden, main, reset_garden
+
+
+@pytest.fixture()
+def cli_db(monkeypatch):
+    """Run seed's main() against an in-memory DB for USER."""
+    engine = make_engine("sqlite://")
+    monkeypatch.setattr(seed_module, "make_engine", lambda: engine)
+    monkeypatch.setattr(seed_module, "owner_user_id", lambda: USER)
+    return make_session_factory(engine)
+
+
+def _edit_container_1(factory):
+    with factory() as s:
+        c1 = s.scalars(select(Container).filter_by(number=1)).one()
+        c1.condition = "edited in the bot"
+        s.commit()
+
+
+def _condition_1(factory):
+    with factory() as s:
+        return s.scalars(select(Container).filter_by(number=1)).one().condition
+
+
+def test_first_run_loads(cli_db):
+    main([])
+    with cli_db() as s:
+        assert has_garden(s, USER)
+        assert _counts(s)["container"] == 24
+
+
+def test_second_run_refuses_and_keeps_edits(cli_db):
+    main([])
+    _edit_container_1(cli_db)
+    with pytest.raises(SystemExit) as exc:
+        main([])
+    assert "already in the database" in str(exc.value)
+    assert _condition_1(cli_db) == "edited in the bot"
+
+
+def test_reset_needs_yes(cli_db, monkeypatch):
+    main([])
+    _edit_container_1(cli_db)
+    monkeypatch.setattr("builtins.input", lambda prompt="": "no")
+    with pytest.raises(SystemExit):
+        main(["--reset"])
+    assert _condition_1(cli_db) == "edited in the bot"
+
+
+def test_reset_with_yes_reloads_yaml(cli_db, monkeypatch):
+    main([])
+    _edit_container_1(cli_db)
+    monkeypatch.setattr("builtins.input", lambda prompt="": "yes")
+    main(["--reset"])
+    assert _condition_1(cli_db) == "בפריחה"
+    with cli_db() as s:
+        assert _counts(s) == {"slot": 15, "container": 24, "plant": 29, "product": 3}
+
+
+def test_reset_only_touches_one_user():
+    with _session() as s:
+        seed(s, load_yaml(), USER)
+        seed(s, load_yaml(), 222)
+        reset_garden(s, USER)
+        assert not has_garden(s, USER)
+        assert has_garden(s, 222)
