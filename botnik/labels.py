@@ -30,6 +30,10 @@ MATERIAL_HE = {
     "plastic (thick)": "פלסטיק עבה",
     "plastic (nursery pot)": "פלסטיק (עציץ משתלה)",
     "ceramic": "קרמיקה",
+    "terracotta": "טרקוטה (חרס)",
+    "fabric": "בד",
+    "metal": "מתכת",
+    "wood": "עץ",
 }
 COLOR_HE = {
     "white": "לבן",
@@ -40,6 +44,10 @@ COLOR_HE = {
     "light blue": "תכלת",
     "terracotta": "טרקוטה",
     "pink": "ורוד",
+    "grey": "אפור",
+    "green": "ירוק",
+    "brown": "חום",
+    "transparent": "שקוף",
 }
 SUBSTRATE_HE = {"succulent mix": "מצע לסוקולנטים"}
 TYPE_HE = {"red_rail_large": "אדנית מעקה אדומה גדולה", "red_rail_small": "אדנית מעקה אדומה קטנה"}
