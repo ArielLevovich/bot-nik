@@ -14,6 +14,7 @@ from sqlalchemy.orm import Session
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup
 
 from botnik import labels as L
+from botnik.missing import missing_fields
 from botnik.models import Container, Slot
 from botnik.volume import estimate_container
 
@@ -227,8 +228,9 @@ def container_card(session: Session, user_id: int, number: int, back: str = "a")
     lines += ["", f"<b>מצב:</b> {L.STATUS_EMOJI.get(c.status, '⚪')} {L.he(L.STATUS_HE, c.status)}"]
     lines.append(f"   {escape(c.condition)}" if c.condition else "   לא נרשם")
 
-    if c.missing:
-        lines += ["", "❓ <b>חסר:</b> " + ", ".join(escape(L.missing_he(m)) for m in c.missing)]
+    missing = missing_fields(c)
+    if missing:
+        lines += ["", "❓ <b>חסר:</b> " + ", ".join(escape(L.missing_he(m)) for m in missing)]
 
     if back == "m":
         back_btn = InlineKeyboardButton("⬅️ לרשימת החסרים", callback_data=CB_MISSING)
@@ -243,13 +245,13 @@ def missing_view(session: Session, user_id: int) -> tuple[str, InlineKeyboardMar
     containers = [
         c
         for c in session.scalars(select(Container).where(Container.user_id == user_id).order_by(Container.number))
-        if c.missing
+        if missing_fields(c)
     ]
     if not containers:
         return "✅ אין פרטים חסרים. כל העציצים מלאים!", InlineKeyboardMarkup([])
     lines = ["❓ <b>עציצים שחסרים להם פרטים</b>", ""]
     for c in containers:
         lines.append(container_line(c))
-        lines.append("   חסר: " + ", ".join(escape(L.missing_he(m)) for m in c.missing))
+        lines.append("   חסר: " + ", ".join(escape(L.missing_he(m)) for m in missing_fields(c)))
     lines += ["", "בחר עציץ לכרטיס המלא. עריכת הפרטים ישירות מכאן תתווסף בשלב הבא."]
     return "\n".join(lines), InlineKeyboardMarkup(_container_buttons(containers, "m"))

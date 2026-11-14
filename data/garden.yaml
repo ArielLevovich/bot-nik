@@ -5,7 +5,7 @@
 #
 # מוסכמות:
 #   - כל המידות בס"מ, חיצוניות, נמדדו כשהצמח שתול. נפח פנימי מחושב בקוד.
-#   - null = לא נמסר עדיין. כל שדה חסר מופיע ב־missing של המיכל.
+#   - null = לא נמסר עדיין. הבוט מחשב בעצמו מה חסר; ב־missing רק מה שאי אפשר לחשב.
 #   - latin_verified: false = שם מדעי לפי הזיהוי שלי, לאימות מתמונה או מתווית.
 #   - slot: קוד מהמפה. מיכל שעומד בין שני מקטעים מקבל slot + between.
 
@@ -329,7 +329,6 @@ containers:
     condition: null
     pests_history: ["כנימה קמחית חוזרת"]
     pest_profile: sensitive      # מסלול רגיש: קונפידור בהשקיה למצע כטיפול עיקרי
-    missing: [level, shape, material, color, outer, condition]
 
   - id: 22
     slot: H1
@@ -338,7 +337,6 @@ containers:
       - {name_he: הויה (חדשה), name_en: Hoya, latin: Hoya sp., latin_verified: false}
     status: unknown
     pest_profile: sensitive
-    missing: [shape, material, color, outer, condition]
 
   - id: 23
     slot: H1
@@ -346,7 +344,6 @@ containers:
     plants:
       - {name_he: חמציץ לבן, name_en: White oxalis, latin: Oxalis sp., latin_verified: false}
     status: unknown
-    missing: [shape, material, color, outer, condition]
 
   - id: 24
     slot: null
@@ -356,7 +353,7 @@ containers:
     plants:
       - {name_he: לבנדר מנוצה, name_en: Fernleaf lavender, latin: Lavandula pinnata, latin_verified: false, note: "או Lavandula multifida"}
     status: unknown
-    missing: [slot, level, shape, material, outer (meaning of 10×12), condition]
+    missing: [outer_raw_meaning]   # מה המשמעות של 10×12; שאר החסרים מחושבים בקוד
 
 # מלאי חומרים בבית
 products:

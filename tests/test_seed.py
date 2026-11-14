@@ -1,6 +1,7 @@
 from sqlalchemy import func, select
 
 from botnik.db import make_engine, make_session_factory
+from botnik.missing import missing_fields
 from botnik.models import Container, Plant, Product, Slot
 from botnik.seed import load_yaml, seed
 from botnik.volume import estimate_container
@@ -52,7 +53,7 @@ def test_missing_lists():
     # 2, 3, 4 and 7 were completed on 14.11.2026; 21-24 still wait for details.
     with _session() as s:
         seed(s, load_yaml(), USER)
-        with_missing = sorted(c.number for c in s.scalars(select(Container)) if c.missing)
+        with_missing = sorted(c.number for c in s.scalars(select(Container)) if missing_fields(c))
         assert with_missing == [21, 22, 23, 24]
 
 

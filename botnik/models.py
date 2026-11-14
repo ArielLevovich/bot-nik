@@ -73,7 +73,9 @@ class Container(Base):
 
     status: Mapped[str] = mapped_column(String(16), default="unknown")
     condition: Mapped[str | None] = mapped_column(Text)
-    missing: Mapped[list] = mapped_column(JSON, default=list)
+    # Only items that can't be computed from the fields; see botnik.missing.missing_fields().
+    # (Column keeps its original name "missing" so existing databases still open.)
+    missing_extra: Mapped[list] = mapped_column("missing", JSON, default=list)
 
     slot: Mapped[Slot | None] = relationship(back_populates="containers", foreign_keys=[slot_id])
     between_slot: Mapped[Slot | None] = relationship(foreign_keys=[between_slot_id])

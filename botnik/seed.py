@@ -26,6 +26,7 @@ from sqlalchemy.orm import Session
 
 from botnik.config import PROJECT_ROOT, parse_user_ids
 from botnik.db import make_engine, make_session_factory
+from botnik.missing import extras_from_yaml
 from botnik.models import Container, Plant, Product, Slot
 
 GARDEN_YAML = PROJECT_ROOT / "data" / "garden.yaml"
@@ -105,7 +106,7 @@ def seed(session: Session, data: dict[str, Any], user_id: int) -> dict[str, int]
                 "hang_note": c.get("hang_note"),
                 "status": c.get("status") or "unknown",
                 "condition": c.get("condition"),
-                "missing": [str(m) for m in c.get("missing") or []],
+                "missing_extra": extras_from_yaml(c.get("missing") or []),
             },
         )
         session.flush()

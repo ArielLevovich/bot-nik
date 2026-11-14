@@ -51,6 +51,7 @@ MISSING_HE = {
     "outer.length": "אורך",
     "outer.height": "גובה המיכל",
     "outer.diameter": "קוטר",
+    "outer_raw_meaning": "מה המשמעות של המידה שנרשמה",
     "level": "גובה הצבה (מעקה/מדף/רצפה/תלוי)",
     "shape": "צורה",
     "material": "חומר",
