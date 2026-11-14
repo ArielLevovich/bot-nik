@@ -2,7 +2,8 @@
 
 Callback data:
   t:d:<task>:<m|e>   done          t:p:<task>:<m|e>  tomorrow      t:n:<task>:<m|e>  not needed
-  t:all:<m|e>        all done      t:dry             pick a dry pot t:dry:<n>         that pot is dry
+  t:c:<task>:<c|l|w>:<m|e>  pest check: clean / less / worse
+  t:all:<m|e>        all done (not checks)      t:dry             pick a dry pot t:dry:<n>         that pot is dry
   t:back             back to the evening summary
   w:<kind>:all | w:<kind>:a:<area> | w:<kind>:pick | w:<kind>:c:<n>   kind = w (water) or f<product id>
   b:<w|f>:<area>:<answer> | b:skip    one-time "when did you last ..." per area
@@ -18,15 +19,16 @@ from sqlalchemy.orm import Session
 from telegram import InlineKeyboardButton as Btn
 from telegram import InlineKeyboardMarkup as Kb
 
-from botnik import carelog, clock, rules, tasks
+from botnik import carelog, clock, doctor, rules, tasks
 from botnik import labels as L
 from botnik.care import FEED_GROUP_HE, WATER_NEED_HE, fertilizers
-from botnik.models import Container, Product, Task, UserSettings
+from botnik.models import Container, Issue, Product, Task, UserSettings
+from botnik.pests import PESTS
 from botnik.sun import area_label, areas
 from botnik.views import escape, plant_summary
 
 MAX_TASK_ROWS = 30  # Telegram keyboards get unwieldy beyond this
-TYPE_EMOJI = {"water": "💧", "feed": "🌱"}
+TYPE_EMOJI = {"water": "💧", "feed": "🌱", "check": "🔍", "treat": "🧴"}
 STATUS_MARK = {"done": "✅", "not_needed": "✖️", "postponed": "⏭"}
 
 
@@ -41,9 +43,16 @@ def _task_line(session: Session, t: Task, open_ids: set[int]) -> str:
     if t.type == "water":
         amount = rules.suggested_amount_l(c)
         detail = f" · ≈{amount:g} ל׳" if amount else ""
-    else:
+    elif t.type == "feed":
         products = fertilizers(session, c.user_id)
         detail = f" · {escape(products[0].name)} לפי התווית" if products else ""
+    elif t.type == "check":
+        issue = session.get(Issue, t.issue_id)
+        detail = f" – {escape(PESTS[issue.pest].name_he)}: איך זה נראה?" if issue else ""
+    elif t.type == "treat":
+        issue = session.get(Issue, t.issue_id)
+        if issue:
+            detail = f" – {escape(PESTS[issue.pest].name_he)}\n      {escape(doctor.current_step(issue).text_he)}"
     return f"{mark} {TYPE_EMOJI[t.type]} <b>#{c.number}</b> {escape(plant_summary(c))}{detail}"
 
 
@@ -64,6 +73,13 @@ def _task_buttons(items: list[Task], mode: str) -> list[list[Btn]]:
     rows = []
     for t in items[:MAX_TASK_ROWS]:
         label = f"✓ {TYPE_EMOJI[t.type]} #{t.container.number}"
+        if t.type == "check":
+            rows.append([
+                Btn(f"✅ #{t.container.number} נקי", callback_data=f"t:c:{t.id}:c:{mode}"),
+                Btn("😐 פחות", callback_data=f"t:c:{t.id}:l:{mode}"),
+                Btn("❌ עדיין", callback_data=f"t:c:{t.id}:w:{mode}"),
+            ])
+            continue
         rows.append([
             Btn(label, callback_data=f"t:d:{t.id}:{mode}"),
             Btn("⏭ מחר", callback_data=f"t:p:{t.id}:{mode}"),
@@ -85,7 +101,7 @@ def _tomorrow_line(session: Session, user_id: int, today: date) -> str:
 
 
 def morning(session: Session, user_id: int, today: date) -> tuple[str, Kb]:
-    todo = tasks.actionable(session, user_id, today)
+    todo = tasks.actionable(session, user_id, today, evening=False)
     done = tasks.handled_today(session, user_id, today)
     head = f"☀️ <b>בוקר טוב</b> · {clock.date_he(today)}"
     if not todo and not done:
@@ -98,7 +114,7 @@ def morning(session: Session, user_id: int, today: date) -> tuple[str, Kb]:
         lines += ["", "✅ הכל בוצע להיום!"]
     lines += _baseline_hint(session, user_id)
     rows = _task_buttons(todo, "m")
-    if len(todo) > 1:
+    if len([t for t in todo if t.type != "check"]) > 1:
         rows.append([Btn("✓ הכל בוצע", callback_data="t:all:m")])
     return "\n".join(lines), Kb(rows)
 
@@ -112,7 +128,7 @@ def evening(session: Session, user_id: int, today: date) -> tuple[str, Kb]:
         lines.append("הכל סגור להיום ✅")
     lines += ["", _tomorrow_line(session, user_id, today)]
     rows = _task_buttons(todo, "e")
-    if len(todo) > 1:
+    if len([t for t in todo if t.type != "check"]) > 1:
         rows.append([Btn("✓ הכל בוצע", callback_data="t:all:e")])
     rows.append([Btn("🥀 משהו נראה יבש", callback_data="t:dry")])
     return "\n".join(lines), Kb(rows)

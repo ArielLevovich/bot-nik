@@ -81,9 +81,8 @@ data (step 7, optional) – never choose a product or amount.
 - Every treatment is logged and visible on the card.
 - Tests pass.
 
-## Questions for the owner (before starting)
-1. Photos need Pillow (to remove location data and shrink images). CLAUDE.md requires asking before adding it. OK?
-2. Photo identification with the Claude API (step 7): now, later, or never? It needs an Anthropic API key and costs
-   per photo (small for a few photos a month).
+## Owner decisions (14.11.2026)
+- Pillow approved.
+- Step 7 (Claude photo identification) postponed – not built in this task.
 
 Not in this task: weather/ET0, distress index, extreme alerts (Phase 4), drip (Phase 3), free-text "ask Nik", weekly report.

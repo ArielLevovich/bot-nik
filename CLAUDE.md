@@ -15,6 +15,7 @@ Full product spec: `docs/SPEC.md` (full version: Claude Doc "בוט־ניק – 
 - SQLite via SQLAlchemy 2.x (single file `botnik.db`); migrate to Postgres later only if needed
 - PyYAML for the seed file
 - tzdata (time-zone data for Asia/Jerusalem on servers; approved by the owner 14.11.2026)
+- Pillow (photos: strip EXIF, resize; approved by the owner 14.11.2026)
 - pytest for tests
 - Config from `.env` (python-dotenv): `TELEGRAM_BOT_TOKEN`, `ALLOWED_USER_IDS`
 - Hosting: Railway Hobby (owner bought it 14.11.2026; PythonAnywhere's always-on plan had gone up to $10). `railway.json` starts `python -m botnik.bot`; the DB lives on a Railway volume via `BOTNIK_DB_PATH=/data/botnik.db`. Move data with `/backup` and `/restore` in Telegram.
@@ -47,7 +48,7 @@ Key ideas:
 ## Development phases
 0. Infrastructure – bot answers only the owner, DB exists, runs locally. ✓ done (Task 01)
 1. Garden intake – load `garden.yaml`, browse slots/containers/plants in Telegram, edit missing fields. ✓ built (Tasks 01–02); owner still filling 19, 21–24 and sun hours
-2. Health & watering – care log with buttons, simple watering reminders by plant type + pot, pest triage, morning brief (05:50) and evening summary (19:30). Move to Railway. ← **current**: Task 03 done; live on Railway since 14.11.2026 (data restored there; the local botnik.db is now an old copy – never run the bot locally while Railway runs). Waiting for the first real 05:50 brief; then Task 04 (pest triage + photos). Pest triage + photos = Task 04.
+2. Health & watering – care log with buttons, simple watering reminders by plant type + pot, pest triage, morning brief (05:50) and evening summary (19:30). Move to Railway. ← **current**: Task 03 done; live on Railway since 14.11.2026 (data restored there; the local botnik.db is now an old copy – never run the bot locally while Railway runs). Task 04 (pest doctor, treatment policy in `botnik/treatment.py`, issues, follow-ups, photos with EXIF stripped) built 14.11.2026; Claude photo identification postponed by the owner. Pest triage + photos = Task 04.
 3. Drip system – manifolds (4 outlets, 70 cm tubes, 2.3 L/h unregulated), tube allocation, timer duration, placement suggestions.
 4. Smart model – Open-Meteo ET0, pot/zone coefficients, plant tolerances, distress index (מדד מצוקה), extreme-weather alerts.
 5. Extras – "ask Nik" free text, weekly report, seasonal calendar, vacation mode, time-lapse, calculators.

@@ -8,11 +8,12 @@ from datetime import date, timedelta
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from botnik import carelog, clock, rules
+from botnik import carelog, clock, doctor, rules
 from botnik.care import fertilizers
-from botnik.models import Container, Slot, Task
+from botnik.models import Container, Issue, Slot, Task
 
-TYPES = ("water", "feed")
+TYPES = ("check", "treat", "water", "feed")  # display order within a pot
+CARE_TYPES = ("water", "feed")
 ACTIVE = ("open", "postponed")
 FEED_SKIP_DAYS = 7  # after "not needed" on fertilizing, don't ask again for a week
 
@@ -39,12 +40,20 @@ def due_dates(session: Session, user_id: int, today: date) -> list[Due]:
     last_water = carelog.last_dates(session, user_id, "water")
     last_feed = carelog.last_dates(session, user_id, "feed")
     last_move = carelog.last_dates(session, user_id, "move")
+    issues = doctor.open_pests_by_container(session, user_id)
     out = []
     for c in containers_in_map_order(session, user_id):
-        due, plan = rules.next_water(c, last_water.get(c.id), today)
-        out.append(Due(c, "water", due, plan))
-        due, plan = rules.next_feed(c, last_feed.get(c.id), today, last_move.get(c.id))
-        out.append(Due(c, "feed", due, plan))
+        pests = issues.get(c.id, set())
+        if "root_rot" in pests:
+            out.append(Due(c, "water", None, rules.Plan(None, "מושהה – עובש שורשים, לא משקים עד שהמצע מתייבש")))
+        else:
+            due, plan = rules.next_water(c, last_water.get(c.id), today)
+            out.append(Due(c, "water", due, plan))
+        if pests:
+            out.append(Due(c, "feed", None, rules.Plan(None, "יש בעיה פתוחה – לא מדשנים עד שהיא נפתרת")))
+        else:
+            due, plan = rules.next_feed(c, last_feed.get(c.id), today, last_move.get(c.id))
+            out.append(Due(c, "feed", due, plan))
     return out
 
 
@@ -76,6 +85,19 @@ def generate(session: Session, user_id: int, today: date) -> list[Task]:
         )
         session.add(task)
         created.append(task)
+    # Follow-up checks for pest issues whose check date has come.
+    checking = {
+        t.issue_id for t in session.scalars(select(Task).where(Task.user_id == user_id, Task.type == "check", Task.status.in_(ACTIVE)))
+    }
+    for issue in doctor.due_checks(session, user_id, today):
+        if issue.id in checking:
+            continue
+        task = Task(
+            user_id=user_id, container_id=issue.container_id, type="check", due_date=today, status="open",
+            reason=doctor.summary_he(issue), created_at=clock.now_utc(), issue_id=issue.id,
+        )
+        session.add(task)
+        created.append(task)
     session.commit()
     return created
 
@@ -84,12 +106,15 @@ def _order(session: Session, user_id: int) -> dict[int, int]:
     return {c.id: i for i, c in enumerate(containers_in_map_order(session, user_id))}
 
 
-def actionable(session: Session, user_id: int, today: date) -> list[Task]:
-    tasks = list(
-        session.scalars(
+def actionable(session: Session, user_id: int, today: date, evening: bool = True) -> list[Task]:
+    """Tasks to do now. The morning brief (evening=False) leaves out evening-only ones (neem)."""
+    tasks = [
+        t
+        for t in session.scalars(
             select(Task).where(Task.user_id == user_id, Task.status.in_(ACTIVE), Task.due_date <= today)
         )
-    )
+        if evening or not t.evening_only
+    ]
     order = _order(session, user_id)
     return sorted(tasks, key=lambda t: (order.get(t.container_id, 999), TYPES.index(t.type)))
 
@@ -110,9 +135,16 @@ def get(session: Session, user_id: int, task_id: int) -> Task | None:
     return task if task and task.user_id == user_id else None
 
 
-def complete(session: Session, task: Task) -> None:
+def complete(session: Session, task: Task, today: date | None = None) -> str | None:
+    """Done. Returns a message to show (treatment notes or a refusal), if any."""
     if task.status not in ACTIVE:
-        return
+        return None
+    if task.type == "treat":
+        issue = session.get(Issue, task.issue_id)
+        _, message = doctor.do_step(session, issue, today or clock.today())
+        return message
+    if task.type == "check":
+        return None  # answered with clean / less / worse instead
     c = task.container
     if task.type == "water":
         carelog.log(session, c, "water", source="task", amount_l=rules.suggested_amount_l(c), commit=False)
@@ -120,6 +152,7 @@ def complete(session: Session, task: Task) -> None:
         products = fertilizers(session, c.user_id)
         carelog.log(session, c, "feed", source="task", product_id=products[0].id if products else None, commit=False)
     session.commit()  # carelog.log closed the task and linked the event
+    return None
 
 
 def postpone(session: Session, task: Task, today: date) -> None:
@@ -160,6 +193,7 @@ def tomorrow(session: Session, user_id: int, today: date) -> list[tuple[Containe
     """What is expected tomorrow: rule-based due dates plus postponed tasks."""
     nxt = today + timedelta(days=1)
     out = [(d.container, d.type) for d in due_dates(session, user_id, today) if d.due == nxt]
+    out += [(i.container, "check") for i in doctor.open_issues(session, user_id) if i.next_check == nxt]
     for t in session.scalars(select(Task).where(Task.user_id == user_id, Task.status.in_(ACTIVE), Task.due_date == nxt)):
         if (t.container, t.type) not in out:
             out.append((t.container, t.type))

@@ -9,7 +9,7 @@ from telegram.constants import ParseMode
 from telegram.error import BadRequest
 from telegram.ext import Application, ContextTypes
 
-from botnik import brief, clock, editing, tasks
+from botnik import brief, clock, doctor, editing, tasks
 
 log = logging.getLogger(__name__)
 
@@ -75,7 +75,7 @@ async def today_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
 
 
 async def task_button(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    """t:<d|p|n>:<task>:<m|e>  t:all:<m|e>  t:dry  t:dry:<n>  t:back"""
+    """t:<d|p|n>:<task>:<m|e>  t:c:<task>:<c|l|w>:<m|e>  t:all:<m|e>  t:dry  t:dry:<n>  t:back"""
     query = update.callback_query
     user_id, today = update.effective_user.id, clock.today()
     parts = query.data.split(":")
@@ -90,16 +90,30 @@ async def task_button(update: Update, context: ContextTypes.DEFAULT_TYPE) -> Non
                 await query.answer("המשימה כבר טופלה.")
             else:
                 if action == "d":
-                    tasks.complete(s, task)
+                    message = tasks.complete(s, task, today)
+                    if message:
+                        note = message + "\n\n"
                 elif action == "p":
                     tasks.postpone(s, task, today)
                 else:
                     tasks.not_needed(s, task)
-                await query.answer({"d": "✓ נרשם", "p": "⏭ עבר למחר", "n": "✗ הבנתי, אחכה יותר בפעם הבאה"}[action])
+                skipped = "✗ הבנתי, אחכה יותר בפעם הבאה" if task.type == "water" else "✗ סומן"
+                await query.answer({"d": "✓ נרשם", "p": "⏭ עבר למחר", "n": skipped}[action])
+        elif action == "c":
+            mode = parts[4]
+            task = tasks.get(s, user_id, int(parts[2]))
+            issue = doctor.get(s, user_id, task.issue_id) if task and task.status in tasks.ACTIVE else None
+            if issue is None:
+                await query.answer("המשימה כבר טופלה.")
+            else:
+                result = {"c": "clean", "l": "less", "w": "worse"}[parts[3]]
+                note = doctor.check_result(s, issue, result, today) + "\n\n"
+                await query.answer()
         elif action == "all":
             mode = parts[2]
-            for task in tasks.actionable(s, user_id, today):
-                tasks.complete(s, task)
+            for task in tasks.actionable(s, user_id, today, evening=mode == "e"):
+                if task.type != "check":
+                    tasks.complete(s, task, today)
             await query.answer("✓ הכל נרשם")
         elif action == "dry" and len(parts) == 2:
             await query.answer()

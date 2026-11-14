@@ -17,7 +17,7 @@ from botnik.config import PROJECT_ROOT, Settings, load_settings
 from botnik.db import make_engine, make_session_factory
 from botnik.care import fill_care_defaults
 from botnik import clock
-from botnik.handlers import admin, basic, care, daily, edit, garden, sun
+from botnik.handlers import admin, basic, care, daily, doctor, edit, garden, sun
 from botnik.handlers.auth import GATE_GROUP, PRE_GATE_GROUP, make_gate
 
 log = logging.getLogger(__name__)
@@ -26,6 +26,7 @@ COMMANDS = [
     BotCommand("today", "מה לעשות היום"),
     BotCommand("water", "רישום השקיה"),
     BotCommand("feed", "רישום דישון"),
+    BotCommand("doctor", "בעיה בצמח – מזיקים ומחלות"),
     BotCommand("garden", "כל הגינה"),
     BotCommand("missing", "עציצים שחסרים להם פרטים"),
     BotCommand("sun", "שעות שמש לפי אזור"),
@@ -75,6 +76,10 @@ def build_application(settings: Settings, session_factory: sessionmaker[Session]
     app.add_handler(CallbackQueryHandler(care.water_button, pattern=r"^w:"))
     app.add_handler(CallbackQueryHandler(care.baseline_button, pattern=r"^b:"))
     app.add_handler(CallbackQueryHandler(daily.settings_button, pattern=r"^st:"))
+    app.add_handler(CommandHandler("doctor", doctor.doctor_cmd))
+    app.add_handler(CallbackQueryHandler(doctor.on_button, pattern=r"^d:"))
+    app.add_handler(CallbackQueryHandler(doctor.on_photos_button, pattern=r"^ph:\d+$"))
+    app.add_handler(MessageHandler(filters.PHOTO | filters.Document.IMAGE, doctor.on_photo))  # before restore's handler
     app.add_handler(edit.build_conversation())
     app.add_handler(CallbackQueryHandler(edit.stale_button, pattern=r"^e:"))  # after the conversation
     app.add_handler(CommandHandler("sun", sun.overview))

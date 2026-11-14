@@ -14,7 +14,8 @@ from sqlalchemy.orm import Session
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup
 
 from botnik import labels as L
-from botnik import carelog, clock, rules, sun
+from botnik import carelog, clock, doctor, photos, rules, sun
+from botnik.pests import PESTS
 from botnik.care import FEED_GROUP_HE, WATER_NEED_HE
 from botnik.editing import askable
 from botnik.missing import missing_fields, missing_label
@@ -38,6 +39,8 @@ START_TEXT = (
     "/water – רישום השקיה: כל הגינה, אזור או עציץ\n"
     "/feed – רישום דישון\n"
     "/care – כמה מים ואיזה דישון כל צמח צריך\n"
+    "/doctor – משהו לא בסדר בצמח? (מזיקים ומחלות)\n"
+    "📷 תמונה עם הכיתוב #21 נשמרת לעציץ 21\n"
     "/settings – שעות התדריך והסיכום\n"
     "/myid – מספר המשתמש שלך בטלגרם"
 )
@@ -176,8 +179,11 @@ def care_lines(session: Session, c: Container, today) -> list[str]:
     last_f = carelog.last_date(session, c.id, "feed")
     last_m = carelog.last_date(session, c.id, "move")
     due_w, plan_w = rules.next_water(c, last_w, today)
+    pests = {i.pest for i in doctor.open_issues(session, c.user_id, c.id)}
     lines = []
-    if plan_w is None:
+    if "root_rot" in pests:
+        lines.append(f"💧 <b>השקיה:</b> אחרונה {clock.ago_he(last_w, today)} · <b>מושהית</b> – עובש שורשים")
+    elif plan_w is None:
         lines.append(f"💧 <b>השקיה:</b> אחרונה {clock.ago_he(last_w, today)} · חסר פרופיל טיפול לצמחים")
     else:
         amount = rules.suggested_amount_l(c)
@@ -187,6 +193,8 @@ def care_lines(session: Session, c: Container, today) -> list[str]:
         )
         lines.append(f"   כל {plan_w.days} ימים: {escape(plan_w.reason)}")
     due_f, plan_f = rules.next_feed(c, last_f, today, last_m)
+    if pests:
+        due_f, plan_f = None, rules.Plan(None, "לא מדשנים כשיש בעיה פתוחה")
     nxt = clock.when_he(due_f, today) if due_f else escape(plan_f.reason)
     lines.append(f"🌱 <b>דישון:</b> אחרון {clock.ago_he(last_f, today)} · הבא {nxt}")
     if due_f and plan_f.reason.startswith("תקופת"):
@@ -270,6 +278,10 @@ def container_card(
             )
 
     lines += [""] + care_lines(session, c, clock.today())
+    issues = doctor.open_issues(session, user_id, c.id)
+    for issue in issues:
+        lines.append(f"🐛 <b>בעיה פתוחה:</b> {escape(doctor.summary_he(issue))}")
+    n_photos = photos.count(session, c.id)
 
     lines += ["", f"<b>מצב:</b> {L.STATUS_EMOJI.get(c.status, '⚪')} {L.he(L.STATUS_HE, c.status)}"]
     lines.append(f"   {escape(c.condition)}" if c.condition else "   לא נרשם")
@@ -288,6 +300,11 @@ def container_card(
         InlineKeyboardButton("💧 השקיתי", callback_data=f"c:w:{c.number}"),
         InlineKeyboardButton("🌱 דישנתי", callback_data=f"c:f:{c.number}"),
     ])
+    pest_buttons = [InlineKeyboardButton(f"🐛 {PESTS[i.pest].name_he}", callback_data=f"d:i:{i.id}") for i in issues]
+    pest_buttons.append(InlineKeyboardButton("🐛 בעיה חדשה" if issues else "🐛 בעיה", callback_data=f"d:p:{c.number}"))
+    if n_photos:
+        pest_buttons.append(InlineKeyboardButton(f"📷 תמונות ({n_photos})", callback_data=f"ph:{c.number}"))
+    keyboard.append(pest_buttons[:3])
     if any(askable(m) for m in missing):
         keyboard.append([InlineKeyboardButton("✏️ השלמת פרטים", callback_data=f"e:c:{c.number}")])
     keyboard.append([

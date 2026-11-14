@@ -173,13 +173,15 @@ class Task(Base):
     id: Mapped[int] = mapped_column(primary_key=True)
     user_id: Mapped[int] = mapped_column(BigInteger, index=True)
     container_id: Mapped[int] = mapped_column(ForeignKey("container.id"), index=True)
-    type: Mapped[str] = mapped_column(String(8))  # water / feed
+    type: Mapped[str] = mapped_column(String(8))  # water / feed / check / treat
     due_date: Mapped[date] = mapped_column(Date)
     status: Mapped[str] = mapped_column(String(16), default="open")  # open / postponed / done / not_needed
     reason: Mapped[str | None] = mapped_column(Text)
     created_at: Mapped[datetime] = mapped_column(DateTime)
     closed_at: Mapped[datetime | None] = mapped_column(DateTime)  # also the time of the last postpone
     care_event_id: Mapped[int | None] = mapped_column(ForeignKey("care_event.id"))
+    issue_id: Mapped[int | None] = mapped_column(ForeignKey("issue.id"))  # check / treat tasks
+    evening_only: Mapped[bool | None] = mapped_column()  # neem: shown in the evening summary only
 
     container: Mapped[Container] = relationship()
 
@@ -191,3 +193,40 @@ class UserSettings(Base):
     brief_time: Mapped[str] = mapped_column(String(5), default="05:50")
     evening_time: Mapped[str] = mapped_column(String(5), default="19:30")
     timezone: Mapped[str] = mapped_column(String(32), default="Asia/Jerusalem")
+
+
+class Issue(Base):
+    """A pest or disease on a container (optionally one plant), followed until resolved."""
+
+    __tablename__ = "issue"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    user_id: Mapped[int] = mapped_column(BigInteger, index=True)
+    container_id: Mapped[int] = mapped_column(ForeignKey("container.id"), index=True)
+    plant_id: Mapped[int | None] = mapped_column(ForeignKey("plant.id"))
+    pest: Mapped[str] = mapped_column(String(16))  # key in botnik.pests.PESTS
+    severity: Mapped[str] = mapped_column(String(8))  # light / medium / heavy
+    flowering: Mapped[bool] = mapped_column(default=False)
+    track: Mapped[str] = mapped_column(String(12))  # strong / sensitive / edible (decided when opened)
+    status: Mapped[str] = mapped_column(String(10), default="open")  # open / resolved
+    step: Mapped[int] = mapped_column(Integer, default=0)  # index in the treatment plan
+    opened_at: Mapped[datetime] = mapped_column(DateTime)
+    next_check: Mapped[date | None] = mapped_column(Date)
+    resolved_at: Mapped[datetime | None] = mapped_column(DateTime)
+
+    container: Mapped[Container] = relationship()
+    plant: Mapped[Plant | None] = relationship()
+
+
+class Photo(Base):
+    """A plant photo saved on the server, EXIF removed. `path` is relative to the photos folder."""
+
+    __tablename__ = "photo"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    user_id: Mapped[int] = mapped_column(BigInteger, index=True)
+    container_id: Mapped[int] = mapped_column(ForeignKey("container.id"), index=True)
+    plant_id: Mapped[int | None] = mapped_column(ForeignKey("plant.id"))
+    issue_id: Mapped[int | None] = mapped_column(ForeignKey("issue.id"))
+    path: Mapped[str] = mapped_column(String(255))
+    taken_at: Mapped[datetime] = mapped_column(DateTime)
