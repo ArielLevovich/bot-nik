@@ -4,17 +4,32 @@ from __future__ import annotations
 
 import logging
 
-from telegram.ext import Application, CommandHandler
+from sqlalchemy.orm import Session, sessionmaker
+from telegram import BotCommand
+from telegram.ext import Application, CallbackQueryHandler, CommandHandler
 
 from botnik.config import Settings, load_settings
-from botnik.handlers import basic
+from botnik.db import make_engine, make_session_factory
+from botnik.handlers import basic, garden
 from botnik.handlers.auth import GATE_GROUP, PRE_GATE_GROUP, make_gate
 
 log = logging.getLogger(__name__)
 
+COMMANDS = [
+    BotCommand("garden", "כל הגינה"),
+    BotCommand("missing", "עציצים שחסרים להם פרטים"),
+    BotCommand("start", "מה הבוט יודע לעשות"),
+    BotCommand("myid", "מספר המשתמש שלי"),
+]
 
-def build_application(settings: Settings) -> Application:
-    app = Application.builder().token(settings.telegram_bot_token).build()
+
+async def _post_init(app: Application) -> None:
+    await app.bot.set_my_commands(COMMANDS)  # the "Menu" button in Telegram
+
+
+def build_application(settings: Settings, session_factory: sessionmaker[Session] | None = None) -> Application:
+    app = Application.builder().token(settings.telegram_bot_token).post_init(_post_init).build()
+    app.bot_data["session_factory"] = session_factory or make_session_factory(make_engine())
 
     # Open to everyone, runs before the allow-list gate.
     app.add_handler(CommandHandler("myid", basic.myid), group=PRE_GATE_GROUP)
@@ -22,6 +37,9 @@ def build_application(settings: Settings) -> Application:
     app.add_handler(make_gate(settings.allowed_user_ids), group=GATE_GROUP)
 
     app.add_handler(CommandHandler("start", basic.start))
+    app.add_handler(CommandHandler("garden", garden.garden))
+    app.add_handler(CommandHandler("missing", garden.missing))
+    app.add_handler(CallbackQueryHandler(garden.on_button, pattern=r"^g:"))
     return app
 
 

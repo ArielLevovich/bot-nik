@@ -1,9 +1,12 @@
-"""Basic commands: /myid (open to everyone) and a temporary /start."""
+"""Basic commands: /myid (open to everyone) and /start."""
 
 from __future__ import annotations
 
 from telegram import Update
+from telegram.constants import ParseMode
 from telegram.ext import ContextTypes
+
+from botnik.views import START_TEXT
 
 
 async def myid(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -17,7 +20,6 @@ async def myid(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
 
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    # Temporary greeting; the full /start text comes in step 4.
     if update.effective_message is None:
         return
-    await update.effective_message.reply_text("שלום! בוט־ניק פועל 🌱")
+    await update.effective_message.reply_text(START_TEXT, parse_mode=ParseMode.HTML)
